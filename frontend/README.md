@@ -1,73 +1,167 @@
-# React + TypeScript + Vite
+# Cake Up - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web do sistema Cake Up, desenvolvida com React, TypeScript, Vite, Tailwind CSS e Zustand.
 
-Currently, two official plugins are available:
+## 🎨 Design
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+O design foi baseado nos mockups fornecidos, com um esquema de cores rosa coral e azul ciano, criando uma interface amigável e moderna para dispositivos móveis.
 
-## React Compiler
+## 🚀 Tecnologias
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 18** - Biblioteca UI
+- **TypeScript** - Tipagem estática
+- **Vite** - Build tool e dev server
+- **Tailwind CSS** - Framework CSS utility-first
+- **React Router DOM** - Roteamento
+- **Zustand** - Gerenciamento de estado
+- **Axios** - Cliente HTTP
+- **React Icons** - Biblioteca de ícones
 
-## Expanding the ESLint configuration
+## 📁 Estrutura de Pastas
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   ├── Layout/         # Header, Footer, Layout
+│   └── ProtectedRoute.tsx
+├── pages/              # Páginas da aplicação
+│   ├── Home.tsx
+│   ├── Login.tsx
+│   ├── Profile.tsx
+│   ├── Products.tsx
+│   ├── Orders.tsx
+│   ├── Historia.tsx
+│   └── QuemSomos.tsx
+├── store/              # Zustand stores
+│   ├── authStore.ts    # Autenticação
+│   ├── cartStore.ts    # Carrinho de compras
+│   └── orderStore.ts   # Pedidos
+├── services/           # Integração com API
+│   └── api.ts
+├── types/              # Definições TypeScript
+│   └── index.ts
+├── App.tsx             # Componente raiz e rotas
+├── main.tsx            # Entry point
+└── index.css           # Estilos globais
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🎯 Funcionalidades Implementadas
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Páginas Públicas
+- ✅ **Home** - Menu principal com navegação
+- ✅ **Login/Cadastro** - Autenticação de usuários
+- ✅ **História** - História da confeitaria
+- ✅ **Quem Somos** - Informações sobre a empresa
+- ✅ **Produtos** - Catálogo de produtos (visualização pública)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Páginas Protegidas (Requer Login)
+- ✅ **Perfil** - Gerenciamento de dados e endereços
+- ✅ **Pedidos** - Histórico e status de pedidos
+
+### Componentes
+- ✅ **Header** - Navegação com menu hamburguer, carrinho e perfil
+- ✅ **Footer** - Botão de chat fixo
+- ✅ **Layout** - Wrapper para todas as páginas
+- ✅ **ProtectedRoute** - Proteção de rotas autenticadas
+
+### Gerenciamento de Estado
+- ✅ **Auth Store** - Autenticação e dados do usuário
+- ✅ **Cart Store** - Carrinho de compras com cálculo de total
+- ✅ **Order Store** - Pedidos do usuário
+
+### Integrações
+- ✅ **API Backend** - Comunicação com Django REST API
+- ✅ **ViaCEP** - Autocompletar endereço por CEP
+
+## 🎨 Cores Customizadas
+
+```css
+cake-pink: #FFB5A0      /* Rosa coral - header, botões */
+cake-dark-pink: #FF9B85 /* Rosa escuro - hover states */
+cake-cyan: #B0E0E6      /* Azul ciano - cards, inputs */
+cake-text: #4A4A4A      /* Texto principal */
 ```
+
+## 🛣️ Rotas
+
+### Públicas
+- `/` - Home
+- `/login` - Login/Cadastro
+- `/produtos` - Produtos
+- `/historia` - História
+- `/quem-somos` - Quem Somos
+
+### Protegidas
+- `/perfil` - Perfil do usuário
+- `/pedidos` - Pedidos
+
+## 🔧 Desenvolvimento
+
+### Instalar dependências
+```bash
+npm install
+```
+
+### Iniciar servidor de desenvolvimento
+```bash
+npm run dev
+```
+
+O app estará disponível em `http://localhost:5173`
+
+### Build para produção
+```bash
+npm run build
+```
+
+### Preview do build
+```bash
+npm run preview
+```
+
+## 🔌 Configuração da API
+
+Crie um arquivo `.env` na raiz do frontend:
+
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
+## 📱 Design Responsivo
+
+A aplicação foi desenvolvida com abordagem mobile-first, otimizada para dispositivos móveis mas funcionando perfeitamente em tablets e desktops.
+
+## 🔒 Autenticação
+
+- Token JWT armazenado no localStorage via Zustand persist
+- Interceptor axios adiciona token automaticamente em requisições
+- Redirecionamento automático para login em caso de token inválido
+- Rotas protegidas verificam autenticação antes de renderizar
+
+## 🛒 Carrinho de Compras
+
+- Adicionar/remover produtos
+- Atualizar quantidades
+- Cálculo automático do total
+- Persistência entre navegações
+
+## 📦 Features em Desenvolvimento
+
+- [ ] Integração completa com backend Django
+- [ ] Cálculo de frete real
+- [ ] Upload de imagens de produtos
+- [ ] Sistema de chat funcional
+- [ ] Notificações em tempo real
+- [ ] Pagamento online
+
+## 🎯 Próximos Passos
+
+1. Implementar backend Django com endpoints correspondentes
+2. Adicionar testes unitários e de integração
+3. Implementar PWA features
+4. Adicionar animações e transições
+5. Implementar sistema de notificações
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.
