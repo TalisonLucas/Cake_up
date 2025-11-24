@@ -1,18 +1,20 @@
 import { create } from 'zustand';
 import type { Conversation, ChatMessage } from '../types';
-import { mockConversations, mockMessages, getMessagesByConversation } from '../mocks/messages';
+import { chatApi } from '../services/api';
 
 interface ChatState {
   conversations: Conversation[];
   messages: { [conversationId: string]: ChatMessage[] };
   activeConversationId: string | null;
   isTyping: { [userId: string]: boolean };
+  loading: boolean;
+  error: string | null;
   
   // Actions
-  loadConversations: (userId: string) => void;
-  loadMessages: (conversationId: string) => void;
+  loadConversations: () => Promise<void>;
+  loadMessages: (conversationId: string) => Promise<void>;
   setActiveConversation: (conversationId: string | null) => void;
-  sendMessage: (conversationId: string, message: string, senderId: string, senderName: string, senderRole: any) => void;
+  sendMessage: (conversationId: string, message: string, senderId: string, senderName: string, senderRole: any) => Promise<void>;
   markAsRead: (conversationId: string, userId: string) => void;
   setTyping: (userId: string, isTyping: boolean) => void;
   createConversation: (conversation: Conversation) => void;
@@ -24,24 +26,45 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: {},
   activeConversationId: null,
   isTyping: {},
+  loading: false,
+  error: null,
   
-  // Load conversations for a user
-  loadConversations: (userId) => {
-    const userConversations = mockConversations.filter(conv =>
-      conv.participants.some(p => p.id === userId)
-    );
-    set({ conversations: userConversations });
+  // Load conversations from API
+  loadConversations: async () => {
+    set({ loading: true, error: null });
+    try {
+      const conversations = await chatApi.getConversations();
+      set({ conversations, loading: false });
+    } catch (error: any) {
+      console.error('Erro ao carregar conversas:', error);
+      set({ 
+        error: error.response?.data?.detail || 'Erro ao carregar conversas',
+        loading: false,
+        conversations: [] // Fallback para array vazio
+      });
+    }
   },
   
-  // Load messages for a conversation
-  loadMessages: (conversationId) => {
-    const conversationMessages = getMessagesByConversation(conversationId);
-    set((state) => ({
-      messages: {
-        ...state.messages,
-        [conversationId]: conversationMessages,
-      },
-    }));
+  // Load messages from API
+  loadMessages: async (conversationId) => {
+    try {
+      const messages = await chatApi.getMessages(conversationId);
+      set((state) => ({
+        messages: {
+          ...state.messages,
+          [conversationId]: messages,
+        },
+      }));
+    } catch (error: any) {
+      console.error('Erro ao carregar mensagens:', error);
+      // Fallback para array vazio
+      set((state) => ({
+        messages: {
+          ...state.messages,
+          [conversationId]: [],
+        },
+      }));
+    }
   },
   
   // Set active conversation
@@ -52,46 +75,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
   
-  // Send message
-  sendMessage: (conversationId, message, senderId, senderName, senderRole) => {
-    const newMessage: ChatMessage = {
-      id: `msg-${Date.now()}-${Math.random()}`,
-      conversationId,
-      senderId,
-      senderName,
-      senderRole,
-      message,
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    
-    set((state) => ({
-      messages: {
-        ...state.messages,
-        [conversationId]: [...(state.messages[conversationId] || []), newMessage],
-      },
-      conversations: state.conversations.map(conv =>
-        conv.id === conversationId
-          ? { ...conv, lastMessage: newMessage, updatedAt: newMessage.timestamp }
-          : conv
-      ),
-    }));
-    
-    // Simulate response after 2 seconds (for testing)
-    setTimeout(() => {
-      const conv = get().conversations.find(c => c.id === conversationId);
-      if (!conv) return;
+  // Send message via API
+  sendMessage: async (conversationId, message, senderId, senderName, senderRole) => {
+    try {
+      const newMessage = await chatApi.sendMessage(conversationId, message);
       
-      const otherParticipant = conv.participants.find(p => p.id !== senderId);
-      if (!otherParticipant) return;
-      
-      const responseMessage: ChatMessage = {
+      // Update local state with the new message
+      set((state) => ({
+        messages: {
+          ...state.messages,
+          [conversationId]: [...(state.messages[conversationId] || []), newMessage],
+        },
+        conversations: state.conversations.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, lastMessage: newMessage, updatedAt: newMessage.timestamp }
+            : conv
+        ),
+      }));
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
+      // Se falhar, ainda adiciona localmente (modo offline)
+      const fallbackMessage: ChatMessage = {
         id: `msg-${Date.now()}-${Math.random()}`,
         conversationId,
-        senderId: otherParticipant.id,
-        senderName: otherParticipant.name,
-        senderRole: otherParticipant.role,
-        message: 'Obrigado pela mensagem! Em breve responderemos.',
+        senderId,
+        senderName,
+        senderRole,
+        message,
         timestamp: new Date().toISOString(),
         read: false,
       };
@@ -99,10 +109,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set((state) => ({
         messages: {
           ...state.messages,
-          [conversationId]: [...(state.messages[conversationId] || []), responseMessage],
+          [conversationId]: [...(state.messages[conversationId] || []), fallbackMessage],
         },
       }));
-    }, 2000);
+    }
   },
   
   // Mark messages as read
@@ -147,4 +157,5 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }, 0);
   },
 }));
+
 

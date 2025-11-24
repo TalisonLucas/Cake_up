@@ -17,8 +17,11 @@ COPY . /app/
 # Expose port
 EXPOSE 8000
 
-# Run migrations and start server
-CMD python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+# Run migrations, populate database and start server
+CMD python manage.py migrate && \
+    python manage.py populate_db && \
+    python manage.py runserver 0.0.0.0:8000
+
 
 
 

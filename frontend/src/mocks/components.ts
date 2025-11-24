@@ -126,3 +126,4 @@ export const calculateCupcakePrice = (
   return massa.price + recheio.price + cobertura.price;
 };
 
+

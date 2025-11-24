@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 
@@ -20,4 +20,5 @@ export const Layout = ({ children, title }: LayoutProps) => {
     </div>
   );
 };
+
 

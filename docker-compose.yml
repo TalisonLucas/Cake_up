@@ -1,6 +1,26 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: cakeup-db
+    environment:
+      - POSTGRES_DB=cakeup
+      - POSTGRES_USER=cakeup
+      - POSTGRES_PASSWORD=cakeup123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cakeup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cakeup"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -10,8 +30,20 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - backend_media:/app/media
     environment:
       - PYTHONUNBUFFERED=1
+      - DB_ENGINE=postgresql
+      - DB_NAME=cakeup
+      - DB_USER=cakeup
+      - DB_PASSWORD=cakeup123
+      - DB_HOST=db
+      - DB_PORT=5432
+      - SECRET_KEY=django-insecure-change-this-in-production-cake-up-secret-key-12345
+      - DEBUG=True
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - cakeup-network
     restart: unless-stopped
@@ -32,6 +64,11 @@ services:
 networks:
   cakeup-network:
     driver: bridge
+
+volumes:
+  postgres_data:
+  backend_media:
+
 
 
 

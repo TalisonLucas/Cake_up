@@ -351,3 +351,4 @@ Quando o backend estiver pronto:
 
 Qualquer dúvida, consulte `IMPLEMENTACAO_SISTEMA_CAKE_UP.md` para detalhes técnicos.
 
+

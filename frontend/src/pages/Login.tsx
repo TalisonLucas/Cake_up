@@ -13,13 +13,14 @@ export const Login = () => {
 
   // Login form
   const [loginData, setLoginData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
 
   // Cadastro form
   const [registerData, setRegisterData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     phone: '',
@@ -31,11 +32,14 @@ export const Login = () => {
     setLoading(true);
 
     try {
-      const data = await authApi.login(loginData.email, loginData.password);
-      login(data.user, data.token);
+      const data = await authApi.login(loginData.username, loginData.password);
+      
+      // Fazer login com dados completos (token e refreshToken já incluem o perfil do usuário)
+      login(data.user, data.token, data.refreshToken);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erro ao fazer login');
+      const errorMsg = err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -49,14 +53,16 @@ export const Login = () => {
     try {
       const data = await authApi.register(
         registerData.name,
+        registerData.username,
         registerData.email,
         registerData.password,
         registerData.phone
       );
-      login(data.user, data.token);
+      login(data.user, data.token, data.refreshToken);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erro ao cadastrar');
+      const errorMsg = err.response?.data?.username?.[0] || err.response?.data?.email?.[0] || err.response?.data?.password?.[0] || err.response?.data?.message || 'Erro ao cadastrar';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -99,12 +105,13 @@ export const Login = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <h2 className="text-xl font-semibold mb-4">Login de usuário</h2>
             <div>
-              <label className="block text-sm font-medium mb-1">Nome:</label>
+              <label className="block text-sm font-medium mb-1">Usuário ou Email:</label>
               <input
                 type="text"
-                value={loginData.email}
+                placeholder="Ex: cliente1 ou cliente1@email.com"
+                value={loginData.username}
                 onChange={(e) =>
-                  setLoginData({ ...loginData, email: e.target.value })
+                  setLoginData({ ...loginData, username: e.target.value })
                 }
                 className="w-full px-4 py-2 bg-cake-cyan rounded-lg border-0 focus:ring-2 focus:ring-cake-pink outline-none"
                 required
@@ -146,9 +153,23 @@ export const Login = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">E-mail ou telefone:</label>
+              <label className="block text-sm font-medium mb-1">Usuário:</label>
               <input
                 type="text"
+                placeholder="Ex: cliente1"
+                value={registerData.username}
+                onChange={(e) =>
+                  setRegisterData({ ...registerData, username: e.target.value })
+                }
+                className="w-full px-4 py-2 bg-cake-cyan rounded-lg border-0 focus:ring-2 focus:ring-cake-pink outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">E-mail:</label>
+              <input
+                type="email"
+                placeholder="Ex: cliente1@email.com"
                 value={registerData.email}
                 onChange={(e) =>
                   setRegisterData({ ...registerData, email: e.target.value })
@@ -193,4 +214,5 @@ export const Login = () => {
     </Layout>
   );
 };
+
 

@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout/Layout';
 import { ComponentSelector } from '../components/Cupcake/ComponentSelector';
 import { CupcakePreview } from '../components/Cupcake/CupcakePreview';
 import { useCupcakeStore } from '../store/cupcakeStore';
-import { massas, recheios, coberturas } from '../mocks/components';
+import { cupcakeComponentsApi } from '../services/api';
+import type { CupcakeComponent } from '../types';
 import { HiMinus, HiPlus } from 'react-icons/hi';
 
 export const MontarCupcake = () => {
@@ -21,6 +23,29 @@ export const MontarCupcake = () => {
     setObservacoes,
     addToCart,
   } = useCupcakeStore();
+
+  // State para componentes
+  const [massas, setMassas] = useState<CupcakeComponent[]>([]);
+  const [recheios, setRecheios] = useState<CupcakeComponent[]>([]);
+  const [coberturas, setCoberturas] = useState<CupcakeComponent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Carregar componentes da API
+  useEffect(() => {
+    const loadComponents = async () => {
+      try {
+        const allComponents = await cupcakeComponentsApi.getAll();
+        setMassas(allComponents.filter((c: CupcakeComponent) => c.type === 'massa'));
+        setRecheios(allComponents.filter((c: CupcakeComponent) => c.type === 'recheio'));
+        setCoberturas(allComponents.filter((c: CupcakeComponent) => c.type === 'cobertura'));
+      } catch (error) {
+        console.error('Erro ao carregar componentes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadComponents();
+  }, []);
 
   const total = selectedMassa && selectedRecheio && selectedCobertura
     ? selectedMassa.price + selectedRecheio.price + selectedCobertura.price
@@ -44,9 +69,22 @@ export const MontarCupcake = () => {
 
   const isComplete = selectedMassa && selectedRecheio && selectedCobertura;
 
+  if (loading) {
+    return (
+      <Layout title="Monte seu Cupcake">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cake-pink mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando componentes...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout title="Monte seu Cupcake">
-      <div className="py-4">
+      <div className="py-4 lg:py-6 2xl:py-8">
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-cake-text mb-2">
             🎂 Crie seu Cupcake Perfeito
@@ -56,9 +94,9 @@ export const MontarCupcake = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] 2xl:grid-cols-[1fr_1fr_1fr_400px] gap-6 2xl:gap-8">
           {/* Selectors */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-1 2xl:col-span-3 grid grid-cols-1 2xl:grid-cols-3 gap-6 2xl:gap-8">
             {/* Step 1: Massa */}
             <div className="bg-white rounded-2xl p-6 shadow-md">
               <div className="flex items-center gap-2 mb-4">
@@ -113,12 +151,24 @@ export const MontarCupcake = () => {
               />
             </div>
 
-            {/* Quantity and Observations */}
-            {isComplete && (
-              <div className="bg-white rounded-2xl p-6 shadow-md space-y-4">
-                <h3 className="text-lg font-semibold text-cake-text">
-                  ✨ Finalizar Configuração
-                </h3>
+          </div>
+
+          {/* Preview Sidebar */}
+          <div className="lg:col-span-1 2xl:col-span-1">
+            <CupcakePreview
+              massa={selectedMassa}
+              recheio={selectedRecheio}
+              cobertura={selectedCobertura}
+              total={total}
+            />
+          </div>
+
+          {/* Quantity and Observations */}
+          {isComplete && (
+            <div className="bg-white rounded-2xl p-6 shadow-md space-y-4 lg:col-span-2 2xl:col-span-4">
+              <h3 className="text-lg font-semibold text-cake-text">
+                ✨ Finalizar Configuração
+              </h3>
 
                 {/* Quantity */}
                 <div>
@@ -170,22 +220,12 @@ export const MontarCupcake = () => {
                 >
                   🛒 Adicionar ao Pedido
                 </button>
-              </div>
-            )}
-          </div>
-
-          {/* Preview Sidebar */}
-          <div className="lg:col-span-1">
-            <CupcakePreview
-              massa={selectedMassa}
-              recheio={selectedRecheio}
-              cobertura={selectedCobertura}
-              total={total}
-            />
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </Layout>
   );
 };
+
 

@@ -332,3 +332,4 @@ O frontend do Cake Up está **100% completo** e pronto para uso! Todas as funcio
 **Desenvolvido com ❤️ para o Cake Up**
 *Transformando momentos especiais em memórias ainda mais doces! 🎂*
 
+

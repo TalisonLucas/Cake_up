@@ -48,13 +48,7 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
     }
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  // Removido: função não estava sendo utilizada
 
   return (
     <div className="fixed bottom-0 right-0 md:right-4 md:bottom-4 w-full md:w-96 bg-white rounded-t-2xl md:rounded-2xl shadow-2xl border border-gray-200 flex flex-col h-[500px] md:h-[600px] z-50">
@@ -150,4 +144,5 @@ const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
     </div>
   );
 };
+
 

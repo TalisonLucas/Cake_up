@@ -5,7 +5,6 @@ import { OrderCard } from '../components/Order/OrderCard';
 import { useOrderStore } from '../store/orderStore';
 import { useAuthStore } from '../store/authStore';
 import { HiPlus } from 'react-icons/hi';
-import type { OrderStatus } from '../types';
 
 export const Orders = () => {
   const navigate = useNavigate();
@@ -16,7 +15,7 @@ export const Orders = () => {
 
   useEffect(() => {
     if (user) {
-      loadOrders(user.id);
+      loadOrders();
     }
     setLoading(false);
   }, [user, loadOrders]);

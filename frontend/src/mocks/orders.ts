@@ -1,4 +1,4 @@
-import type { Order, Cupcake, OrderStatusHistory, DeliveryCode, Address } from '../types';
+import type { Order, Cupcake, DeliveryCode, Address } from '../types';
 import { massas, recheios, coberturas } from './components';
 import { clients, operators } from './users';
 

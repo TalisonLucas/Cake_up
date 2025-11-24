@@ -408,3 +408,4 @@ npm run test:watch    # Testes em watch mode
 **Última atualização:** $(date)  
 **Versão do Sistema:** 1.0.0 - MVP Frontend
 
+

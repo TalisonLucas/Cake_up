@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import type { Order, OrderStatus, OrderStatusHistory } from '../types';
-import { mockOrders } from '../mocks/orders';
+import { ordersApi } from '../services/api';
 
 interface OrderState {
   orders: Order[];
   currentOrder: Order | null;
+  loading: boolean;
+  error: string | null;
   
   // Actions
-  loadOrders: (userId?: string) => void;
+  loadOrders: () => Promise<void>;
   setOrders: (orders: Order[]) => void;
   addOrder: (order: Order) => void;
   setCurrentOrder: (order: Order | null) => void;
@@ -28,16 +30,24 @@ interface OrderState {
 export const useOrderStore = create<OrderState>((set, get) => ({
   orders: [],
   currentOrder: null,
+  loading: false,
+  error: null,
   
-  // Load orders (with optional filter by user)
-  loadOrders: (userId) => {
-    let orders = [...mockOrders];
-    if (userId) {
-      orders = orders.filter(o => o.clientId === userId);
+  // Load orders from API
+  loadOrders: async () => {
+    set({ loading: true, error: null });
+    try {
+      const orders = await ordersApi.getAll();
+      // Sort by most recent first
+      orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      set({ orders, loading: false });
+    } catch (error: any) {
+      console.error('Erro ao carregar pedidos:', error);
+      set({ 
+        error: error.response?.data?.detail || 'Erro ao carregar pedidos',
+        loading: false 
+      });
     }
-    // Sort by most recent first
-    orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    set({ orders });
   },
   
   setOrders: (orders) => set({ orders }),

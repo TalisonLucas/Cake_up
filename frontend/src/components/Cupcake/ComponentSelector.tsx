@@ -46,13 +46,13 @@ export const ComponentSelector = ({
         {getTypeLabel(type)}
       </h3>
 
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-1 gap-3">
         {components.map((component) => (
           <button
             key={component.id}
             onClick={() => component.disponivel && onSelect(component)}
             disabled={!component.disponivel}
-            className={`relative p-4 rounded-xl border-2 transition-all text-left ${
+            className={`relative p-4 lg:min-h-[100px] rounded-xl border-2 transition-all text-left ${
               selected?.id === component.id
                 ? 'border-cake-pink bg-pink-50 shadow-md scale-105'
                 : component.disponivel
@@ -101,4 +101,5 @@ export const ComponentSelector = ({
     </div>
   );
 };
+
 
