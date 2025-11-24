@@ -6,6 +6,8 @@ import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
 import { Historia } from './pages/Historia';
 import { QuemSomos } from './pages/QuemSomos';
+import { MontarCupcake } from './pages/MontarCupcake';
+import { Carrinho } from './pages/Carrinho';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -18,6 +20,10 @@ function App() {
         <Route path="/historia" element={<Historia />} />
         <Route path="/quem-somos" element={<QuemSomos />} />
         <Route path="/produtos" element={<Products />} />
+        
+        {/* Cupcake Builder */}
+        <Route path="/montar" element={<MontarCupcake />} />
+        <Route path="/carrinho" element={<Carrinho />} />
 
         {/* Protected Routes */}
         <Route
@@ -30,6 +36,14 @@ function App() {
         />
         <Route
           path="/pedidos"
+          element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/meus-pedidos"
           element={
             <ProtectedRoute>
               <Orders />

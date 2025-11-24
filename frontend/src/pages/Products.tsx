@@ -9,7 +9,7 @@ export const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
-  const { items, addItem, total, calculateTotal } = useCartStore();
+  const { items, total, calculateTotal } = useCartStore();
 
   useEffect(() => {
     loadProducts();
