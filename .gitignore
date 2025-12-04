@@ -1,0 +1,241 @@
+# ============================================
+# Cake Up - .gitignore
+# ============================================
+
+# ============ Python / Django (Backend) ============
+
+# Virtual Environment
+backend/venv/
+backend/env/
+backend/.venv/
+backend/ENV/
+backend/env.bak/
+backend/venv.bak/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+*.pot
+*.pyc
+*.pyo
+*.db
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/*.sqlite3
+
+# Django migrations (manter estrutura, ignorar arquivos gerados)
+# backend/*/migrations/__pycache__/
+
+# Media files
+backend/media/
+backend/staticfiles/
+backend/static_root/
+
+# Environment variables
+backend/.env
+backend/.env.local
+backend/.env.*.local
+backend/.env.production
+backend/.env.development
+
+# Django secret key
+backend/secret_key.txt
+backend/.secret
+
+# Coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ============ Node.js / React / Vite (Frontend) ============
+
+# Dependencies
+frontend/node_modules/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/.output/
+frontend/.vite/
+
+# Environment variables
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/.env.production
+frontend/.env.development
+.env
+.env.local
+.env.*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+frontend/coverage/
+frontend/.nyc_output/
+
+# ============ Geral / Projeto ============
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# ============ Documentação / Arquivos Temporários ============
+
+# PDFs grandes (se não quiser versionar)
+*.pdf
+!README*.pdf
+
+# Arquivos de configuração local
+*.local
+config.local.*
+
+# ============ Docker ============
+
+# Docker volumes (se houver)
+docker-volumes/
+
+# ============ IDEs e Editores ============
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============ Outros ============
+
+# Backup files
+*.backup
+*.old
+
+# Lock files (opcional - alguns projetos versionam)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+
+# Misc
+*.pem
+*.key
+*.cert
+
