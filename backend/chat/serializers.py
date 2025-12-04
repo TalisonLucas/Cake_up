@@ -57,3 +57,4 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
         model = Conversation
         fields = ['conversation_type', 'participants']
 
+

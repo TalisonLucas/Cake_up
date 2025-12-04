@@ -11,7 +11,7 @@ interface HeaderProps {
 export const Header = ({ title }: HeaderProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const { items } = useCartStore();
 
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -40,7 +40,7 @@ export const Header = ({ title }: HeaderProps) => {
         {/* Ícones direita */}
         <div className="flex items-center gap-2">
           <Link
-            to="/produtos"
+            to="/carrinho"
             className="p-2 hover:bg-cake-dark-pink rounded-lg transition-colors relative"
             aria-label="Carrinho"
           >
@@ -86,13 +86,40 @@ export const Header = ({ title }: HeaderProps) => {
               </Link>
               {isAuthenticated && (
                 <>
-                  <Link
-                    to="/pedidos"
-                    className="block px-4 py-3 hover:bg-cake-pink transition-colors"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Pedidos
-                  </Link>
+                  {user?.role === 'admin' ? (
+                    <>
+                      <Link
+                        to="/admin/dashboard"
+                        className="block px-4 py-3 hover:bg-cake-pink transition-colors font-semibold bg-purple-50"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        👑 Dashboard Admin
+                      </Link>
+                      <Link
+                        to="/operador/dashboard"
+                        className="block px-4 py-3 hover:bg-cake-pink transition-colors"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        🎯 Dashboard Operador
+                      </Link>
+                    </>
+                  ) : user?.role === 'operator' ? (
+                    <Link
+                      to="/operador/dashboard"
+                      className="block px-4 py-3 hover:bg-cake-pink transition-colors font-semibold bg-purple-50"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      🎯 Dashboard Operador
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/pedidos"
+                      className="block px-4 py-3 hover:bg-cake-pink transition-colors"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Pedidos
+                    </Link>
+                  )}
                   <Link
                     to="/perfil"
                     className="block px-4 py-3 hover:bg-cake-pink transition-colors"
@@ -139,5 +166,6 @@ export const Header = ({ title }: HeaderProps) => {
     </header>
   );
 };
+
 
 

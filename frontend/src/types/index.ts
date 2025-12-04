@@ -65,7 +65,8 @@ export type OrderStatus =
   | 'aceito'        // Aceito pelo operador
   | 'producao'      // Em produção
   | 'liberado'      // Liberado para entrega
-  | 'pago';         // Pago e finalizado
+  | 'pago'          // Pago e finalizado
+  | 'cancelado';    // Cancelado/recusado
 
 export interface OrderStatusHistory {
   status: OrderStatus;

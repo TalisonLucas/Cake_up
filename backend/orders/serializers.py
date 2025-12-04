@@ -67,7 +67,9 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         items_data = validated_data.pop('items')
-        order = Order.objects.create(**validated_data)
+        # O usuário será passado via serializer.save(user=request.user)
+        user = validated_data.pop('user', None)
+        order = Order.objects.create(user=user, **validated_data)
         
         for item_data in items_data:
             OrderItem.objects.create(order=order, **item_data)
@@ -111,4 +113,5 @@ class OrderUpdateSerializer(serializers.ModelSerializer):
 class ValidateDeliveryCodeSerializer(serializers.Serializer):
     """Serializer para validação de código de entrega"""
     code = serializers.CharField(max_length=6)
+
 

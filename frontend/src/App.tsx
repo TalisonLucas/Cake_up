@@ -8,6 +8,8 @@ import { Historia } from './pages/Historia';
 import { QuemSomos } from './pages/QuemSomos';
 import { MontarCupcake } from './pages/MontarCupcake';
 import { Carrinho } from './pages/Carrinho';
+import { OperatorDashboard } from './pages/OperatorDashboard';
+import { AdminDashboard } from './pages/AdminDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -47,6 +49,26 @@ function App() {
           element={
             <ProtectedRoute>
               <Orders />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Operator Routes */}
+        <Route
+          path="/operador/dashboard"
+          element={
+            <ProtectedRoute requireRole="operator">
+              <OperatorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requireRole="admin">
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />

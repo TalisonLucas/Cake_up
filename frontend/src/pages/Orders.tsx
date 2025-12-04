@@ -4,6 +4,7 @@ import { Layout } from '../components/Layout/Layout';
 import { OrderCard } from '../components/Order/OrderCard';
 import { useOrderStore } from '../store/orderStore';
 import { useAuthStore } from '../store/authStore';
+import { useWebSocketStore } from '../store/websocketStore';
 import { HiPlus } from 'react-icons/hi';
 
 export const Orders = () => {
@@ -16,14 +17,30 @@ export const Orders = () => {
   useEffect(() => {
     if (user) {
       loadOrders();
+      
+      // Conectar WebSocket para atualizações em tempo real dos próprios pedidos
+      const connectWebSocket = async () => {
+        try {
+          await useWebSocketStore.getState().connect();
+        } catch (error) {
+          console.error('Erro ao conectar WebSocket:', error);
+        }
+      };
+      
+      connectWebSocket();
     }
     setLoading(false);
+    
+    // Desconectar ao desmontar
+    return () => {
+      useWebSocketStore.getState().disconnect();
+    };
   }, [user, loadOrders]);
 
   const filteredOrders = orders.filter((order) => {
     if (filter === 'all') return true;
-    if (filter === 'active') return order.status !== 'pago';
-    if (filter === 'completed') return order.status === 'pago';
+    if (filter === 'active') return order.status !== 'pago' && order.status !== 'cancelado';
+    if (filter === 'completed') return order.status === 'pago' || order.status === 'cancelado';
     return true;
   });
 

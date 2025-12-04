@@ -13,6 +13,7 @@ class OrderStatus(models.TextChoices):
     EM_PRODUCAO = 'EM_PRODUCAO', 'Em Produção'
     LIBERADO = 'LIBERADO', 'Liberado'
     PAGO = 'PAGO', 'Pago'
+    CANCELADO = 'CANCELADO', 'Cancelado'
 
 
 class Order(models.Model):
@@ -66,10 +67,11 @@ class Order(models.Model):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         
-        # Se é um novo pedido, definir alterable_until (2 minutos após criação)
+        # Se é um novo pedido, definir alterable_until (5 minutos após criação)
+        # Este é o tempo máximo para o operador aceitar ou recusar o pedido
         if is_new and not self.confirmed_at:
             self.confirmed_at = self.created_at
-            self.alterable_until = self.created_at + timedelta(minutes=2)
+            self.alterable_until = self.created_at + timedelta(minutes=5)
             super().save(update_fields=['confirmed_at', 'alterable_until'])
     
     def can_alter(self):

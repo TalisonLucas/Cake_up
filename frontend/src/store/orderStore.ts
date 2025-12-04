@@ -15,6 +15,7 @@ interface OrderState {
   setCurrentOrder: (order: Order | null) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus, operatorId?: string, operatorName?: string, note?: string) => void;
   updateOrder: (orderId: string, updates: Partial<Order>) => void;
+  syncOrder: (order: Order) => void;
   
   // Timer helpers
   canEditOrder: (order: Order) => boolean;
@@ -110,6 +111,23 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       ),
     }));
   },
+
+  // Update or add order from WebSocket (sincroniza pedido completo)
+  syncOrder: (order: Order) => {
+    set((state) => {
+      const existingIndex = state.orders.findIndex(o => o.id === order.id);
+      
+      if (existingIndex >= 0) {
+        // Atualizar pedido existente
+        const updatedOrders = [...state.orders];
+        updatedOrders[existingIndex] = order;
+        return { orders: updatedOrders };
+      } else {
+        // Adicionar novo pedido no início da lista
+        return { orders: [order, ...state.orders] };
+      }
+    });
+  },
   
   // Check if order can be edited (within 2 minutes)
   canEditOrder: (order) => {
@@ -143,13 +161,13 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   // Get active orders (not pago)
   getActiveOrders: () => {
     const { orders } = get();
-    return orders.filter(o => o.status !== 'pago');
+    return orders.filter(o => o.status !== 'pago' && o.status !== 'cancelado');
   },
   
   // Get completed orders (pago)
   getCompletedOrders: () => {
     const { orders } = get();
-    return orders.filter(o => o.status === 'pago');
+    return orders.filter(o => o.status === 'pago' || o.status === 'cancelado');
   },
 }));
 

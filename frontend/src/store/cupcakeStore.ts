@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Cupcake, CupcakeComponent } from '../types';
-import { calculateCupcakePrice } from '../mocks/components';
 
 interface CupcakeBuilderState {
   // Current cupcake being built
@@ -58,13 +57,16 @@ export const useCupcakeStore = create<CupcakeBuilderState>((set, get) => ({
     }
     
     // Create cupcake
+    const unitPrice =
+      selectedMassa.price + selectedRecheio.price + selectedCobertura.price;
+
     const cupcake: Cupcake = {
       id: `cup-${Date.now()}-${Math.random()}`,
       massa: selectedMassa,
       recheio: selectedRecheio,
       cobertura: selectedCobertura,
       quantity,
-      preco: calculateCupcakePrice(selectedMassa.id, selectedRecheio.id, selectedCobertura.id),
+      preco: unitPrice,
       observacoes: observacoes || undefined,
     };
     
@@ -115,5 +117,6 @@ export const useCupcakeStore = create<CupcakeBuilderState>((set, get) => ({
     });
   },
 }));
+
 
 

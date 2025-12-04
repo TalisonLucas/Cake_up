@@ -4,14 +4,15 @@ import { Layout } from '../components/Layout/Layout';
 import { useCupcakeStore } from '../store/cupcakeStore';
 import { useOrderStore } from '../store/orderStore';
 import { useAuthStore } from '../store/authStore';
+import { ordersApi } from '../services/api';
 import { HiTrash, HiMinus, HiPlus } from 'react-icons/hi';
-import type { Address, Order } from '../types';
+import type { Address } from '../types';
 
 export const Carrinho = () => {
   const navigate = useNavigate();
   const { cart, removeFromCart, updateCartItem, getTotal, clearCart } = useCupcakeStore();
   const { addOrder } = useOrderStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   
   const [endereco, setEndereco] = useState<Partial<Address>>({
     cep: '',
@@ -31,7 +32,7 @@ export const Carrinho = () => {
     updateCartItem(index, { ...cupcake, quantity: newQuantity });
   };
 
-  const handleConfirmarPedido = () => {
+  const handleConfirmarPedido = async () => {
     if (!isAuthenticated) {
       alert('Você precisa estar logado para fazer um pedido!');
       navigate('/login');
@@ -48,38 +49,21 @@ export const Carrinho = () => {
       return;
     }
 
-    // Create order
-    const now = new Date();
-    const canEditUntil = new Date(now.getTime() + 2 * 60 * 1000); // 2 minutes from now
+    try {
+      // Criar pedido no backend
+      const createdOrder = await ordersApi.create(cart, endereco as Address, observacoes);
 
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      number: `#CKP${new Date().getFullYear()}${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`,
-      status: 'aguardando',
-      total,
-      destination: `${endereco.city}, ${endereco.state}`,
-      items: cart,
-      canEditUntil: canEditUntil.toISOString(),
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-      clientId: user!.id,
-      clientName: user!.name,
-      enderecoEntrega: endereco as Address,
-      observacoes,
-      statusHistory: [
-        {
-          status: 'aguardando',
-          timestamp: now.toISOString(),
-          note: 'Pedido criado',
-        },
-      ],
-    };
+      // Atualizar store local com o pedido retornado pela API
+      addOrder(createdOrder);
+      clearCart();
 
-    addOrder(newOrder);
-    clearCart();
-
-    alert(`Pedido ${newOrder.number} criado com sucesso! Você tem 2 minutos para alterá-lo.`);
-    navigate('/meus-pedidos');
+      alert(`Pedido ${createdOrder.number} criado com sucesso! Você tem 5 minutos para o operador aceitar.`);
+      navigate('/meus-pedidos');
+    } catch (error: any) {
+      console.error('Erro ao criar pedido:', error);
+      const message = error.response?.data?.detail || 'Erro ao criar pedido. Tente novamente.';
+      alert(message);
+    }
   };
 
   if (cart.length === 0) {
@@ -292,5 +276,6 @@ export const Carrinho = () => {
     </Layout>
   );
 };
+
 
 

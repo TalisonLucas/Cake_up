@@ -432,3 +432,4 @@ O frontend do Sistema Cake Up está **funcional e completo** conforme o roteiro 
 **Próximo Passo:** Implementar backend Django com PostgreSQL para substituir os dados mockados por dados reais.
 
 
+

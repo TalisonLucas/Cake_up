@@ -12,3 +12,4 @@ urlpatterns = [
     path('customers/', CustomerStatsView.as_view(), name='customer-stats'),
 ]
 
+

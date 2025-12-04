@@ -30,9 +30,20 @@ export const OrderCard = ({ order, showTimer = true, showActions = true }: Order
       </div>
 
       {/* Timer (se aplicável) */}
-      {showTimer && canEdit && remainingTime > 0 && (
+      {showTimer && canEdit && remainingTime > 0 && order.status !== 'cancelado' && (
         <div className="mb-3">
           <OrderTimer order={order} />
+        </div>
+      )}
+
+      {/* Aviso de cancelamento */}
+      {order.status === 'cancelado' && (
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+          <p className="font-semibold">Pedido cancelado</p>
+          <p>
+            Este pedido foi cancelado pelo estabelecimento, pois não foi aceito dentro do prazo ou foi recusado pelo
+            operador.
+          </p>
         </div>
       )}
 
@@ -85,5 +96,6 @@ export const OrderCard = ({ order, showTimer = true, showActions = true }: Order
     </div>
   );
 };
+
 
 

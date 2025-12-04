@@ -48,6 +48,14 @@ export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
           borderColor: 'border-green-300',
           icon: '🟢',
         };
+      case 'cancelado':
+        return {
+          text: 'Cancelado',
+          bgColor: 'bg-red-100',
+          textColor: 'text-red-800',
+          borderColor: 'border-red-300',
+          icon: '🔴',
+        };
       default:
         return {
           text: 'Desconhecido',
@@ -70,5 +78,6 @@ export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
     </span>
   );
 };
+
 
 
