@@ -168,10 +168,52 @@ python manage.py createsuperuser
 
 8. **Iniciar servidor:**
 ```bash
+# Para desenvolvimento local
 python manage.py runserver
+
+# Para usar com ngrok (aceita conexões externas)
+python manage.py runserver 0.0.0.0:8000
 ```
 
 API disponível em: `http://localhost:8000`
+
+**Nota**: Se você estiver usando ngrok para expor o backend, use `0.0.0.0:8000` para permitir conexões externas.
+
+### 🌐 Expondo com ngrok
+
+Para expor o backend via ngrok (útil para desenvolvimento e testes):
+
+1. **Inicie o servidor Django em modo externo:**
+   ```bash
+   python manage.py runserver 0.0.0.0:8000
+   ```
+   Ou use o Makefile:
+   ```bash
+   make run
+   ```
+
+2. **Em outro terminal, inicie o ngrok:**
+   ```bash
+   ngrok http 8000
+   ```
+
+3. **Copie a URL gerada** (ex: `https://xxxx-xxxx-xxxx.ngrok-free.dev`)
+
+4. **Teste a API via ngrok:**
+   ```bash
+   curl https://xxxx-xxxx-xxxx.ngrok-free.dev/api/health/
+   ```
+
+5. **Configure o frontend** para usar a URL do ngrok:
+   ```env
+   VITE_API_URL=https://xxxx-xxxx-xxxx.ngrok-free.dev/api
+   VITE_WS_URL=https://xxxx-xxxx-xxxx.ngrok-free.dev
+   ```
+
+**Importante**: 
+- Use `0.0.0.0:8000` (não `127.0.0.1:8000`) para permitir conexões externas
+- URLs do ngrok mudam a cada reinicialização (plano gratuito)
+- Consulte `NGROK_TROUBLESHOOTING.md` para resolver problemas comuns
 
 ## 🐳 Docker
 

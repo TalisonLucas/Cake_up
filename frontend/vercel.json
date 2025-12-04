@@ -1,0 +1,14 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self' https://*.ngrok-free.dev https://*.ngrok.io https://ngrok.com wss://*.ngrok-free.dev wss://*.ngrok.io; font-src 'self' https://*.ngrok-free.dev https://*.ngrok.io https://ngrok.com data:; img-src 'self' https://*.ngrok-free.dev https://*.ngrok.io https://ngrok.com data: https://w3.org/svg/2000; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.ngrok-free.dev; style-src 'self' 'unsafe-inline' https://*.ngrok-free.dev; connect-src 'self' https://*.ngrok-free.dev https://*.ngrok.io wss://*.ngrok-free.dev wss://*.ngrok.io;"
+        }
+      ]
+    }
+  ]
+}
+

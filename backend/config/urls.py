@@ -3,7 +3,7 @@ URL configuration for config project - Cake Up API
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import (
@@ -19,12 +19,19 @@ def health_check(request):
         "version": "1.0.0"
     })
 
+def root_redirect(request):
+    """Redireciona a rota raiz para a documentação da API"""
+    return HttpResponseRedirect('/api/docs/')
+
 # Customizar admin
 admin.site.site_header = "Cake Up - Administração"
 admin.site.site_title = "Cake Up Admin"
 admin.site.index_title = "Bem-vindo ao painel administrativo do Cake Up"
 
 urlpatterns = [
+    # Root - redireciona para documentação
+    path('', root_redirect, name='root'),
+    
     # Admin
     path('admin/', admin.site.urls),
     

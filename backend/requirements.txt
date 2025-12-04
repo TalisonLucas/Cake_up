@@ -10,6 +10,8 @@ drf-spectacular==0.27.1
 django-filter==24.1
 channels==4.0.0
 channels-redis==4.2.0
+daphne==4.0.0
+daphne==4.0.0
 
 
 

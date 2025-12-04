@@ -19,6 +19,12 @@ api.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${state.token}`;
     }
   }
+  
+  // Adicionar header para pular aviso do ngrok
+  if (config.url && (config.url.includes('ngrok-free.dev') || config.url.includes('ngrok.io'))) {
+    config.headers['ngrok-skip-browser-warning'] = 'true';
+  }
+  
   return config;
 });
 

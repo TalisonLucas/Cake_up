@@ -65,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.NgrokSkipBrowserWarningMiddleware',  # Pular aviso do ngrok
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -171,6 +172,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
+    "https://cake-up.vercel.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True

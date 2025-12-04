@@ -17,10 +17,10 @@ COPY . /app/
 # Expose port
 EXPOSE 8000
 
-# Run migrations, populate database and start server
+# Run migrations, populate database and start ASGI server
 CMD python manage.py migrate && \
     python manage.py populate_db && \
-    python manage.py runserver 0.0.0.0:8000
+    daphne -b 0.0.0.0 -p 8000 config.asgi:application
 
 
 
