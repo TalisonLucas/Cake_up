@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth import update_session_auth_hash
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import CustomUser, Address
 from .serializers import (
     UserSerializer, UserCreateSerializer, UserUpdateSerializer,
@@ -67,12 +68,19 @@ class ChangePasswordView(generics.UpdateAPIView):
         )
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter('id', int, OpenApiParameter.PATH, description='ID do endereço')
+    ]
+)
 class AddressViewSet(viewsets.ModelViewSet):
     """ViewSet para CRUD de endereços"""
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Address.objects.none()
         return Address.objects.filter(user=self.request.user)
     
     def perform_create(self, serializer):

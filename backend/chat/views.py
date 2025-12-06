@@ -3,12 +3,18 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import Conversation, Message
 from .serializers import (
     ConversationSerializer, ConversationCreateSerializer, MessageSerializer
 )
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter('id', int, OpenApiParameter.PATH, description='ID da conversa')
+    ]
+)
 class ConversationViewSet(viewsets.ModelViewSet):
     """ViewSet para conversas"""
     permission_classes = [IsAuthenticated]
@@ -16,6 +22,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
     filterset_fields = ['conversation_type']
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Conversation.objects.none()
         # Usuário vê apenas conversas das quais participa
         return Conversation.objects.filter(participants=self.request.user)
     
@@ -79,12 +87,19 @@ class ConversationViewSet(viewsets.ModelViewSet):
         return Response({"message": f"{messages.count()} mensagens marcadas como lidas."})
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter('id', int, OpenApiParameter.PATH, description='ID da mensagem')
+    ]
+)
 class MessageViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet para mensagens (apenas leitura direta)"""
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Message.objects.none()
         # Usuário vê apenas mensagens de conversas das quais participa
         user_conversations = Conversation.objects.filter(participants=self.request.user)
         return Message.objects.filter(conversation__in=user_conversations)

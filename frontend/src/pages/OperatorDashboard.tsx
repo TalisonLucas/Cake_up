@@ -2,23 +2,41 @@ import { useState, useEffect } from 'react';
 import { Layout } from '../components/Layout/Layout';
 import { StatsCard } from '../components/Operator/StatsCard';
 import { OrderManagementCard } from '../components/Operator/OrderManagementCard';
+import { IngredientsManagementTab } from '../components/Admin/IngredientsManagementTab';
 import { useOrderStore } from '../store/orderStore';
 import { useAuthStore } from '../store/authStore';
 import { useWebSocketStore } from '../store/websocketStore';
 import { reportsApi, ordersApi } from '../services/api';
 import { type OrderStatus } from '../types';
-import { HiClock, HiCheckCircle, HiTruck, HiCurrencyDollar } from 'react-icons/hi';
+import { HiClock, HiCheckCircle, HiTruck, HiCurrencyDollar, HiCog } from 'react-icons/hi';
 
 export const OperatorDashboard = () => {
   const { orders, loadOrders } = useOrderStore();
   const { user } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
-  const [filter, setFilter] = useState<'all' | 'aguardando' | 'aceito' | 'producao' | 'liberado'>('all');
+  const [filter, setFilter] = useState<'all' | 'aguardando' | 'aceito' | 'producao' | 'liberado' | 'pago' | 'cancelado'>('all');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'orders' | 'ingredients'>('orders');
+
+  // Log para debug quando orders mudar
+  useEffect(() => {
+    console.log('📊 OperatorDashboard: orders atualizado', {
+      total: orders.length,
+      porStatus: {
+        aguardando: orders.filter(o => o.status === 'aguardando').length,
+        aceito: orders.filter(o => o.status === 'aceito').length,
+        producao: orders.filter(o => o.status === 'producao').length,
+        liberado: orders.filter(o => o.status === 'liberado').length,
+        pago: orders.filter(o => o.status === 'pago').length,
+        cancelado: orders.filter(o => o.status === 'cancelado').length,
+      },
+      filtroAtual: filter,
+    });
+  }, [orders, filter]);
 
   useEffect(() => {
     loadData();
-    
+
     // Conectar WebSocket para atualizações em tempo real
     const connectWebSocket = async () => {
       try {
@@ -27,12 +45,15 @@ export const OperatorDashboard = () => {
         console.error('Erro ao conectar WebSocket:', error);
       }
     };
-    
+
     connectWebSocket();
-    
-    // Desconectar ao desmontar
+
+    // Desconectar ao desmontar apenas se realmente conectou
     return () => {
-      useWebSocketStore.getState().disconnect();
+      const { connected } = useWebSocketStore.getState();
+      if (connected) {
+        useWebSocketStore.getState().disconnect();
+      }
     };
   }, []);
 
@@ -52,7 +73,9 @@ export const OperatorDashboard = () => {
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     try {
       await ordersApi.updateStatus(orderId, newStatus);
-      await loadData(); // Recarregar dados após atualização
+      // Não recarregar dados - o WebSocket vai atualizar automaticamente em tempo real
+      // Feedback visual será mostrado quando o WebSocket atualizar o pedido
+      console.log(`✅ Status do pedido ${orderId} atualizado para ${newStatus}. Aguardando atualização via WebSocket...`);
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       alert('Erro ao atualizar status do pedido');
@@ -63,7 +86,8 @@ export const OperatorDashboard = () => {
     try {
       await ordersApi.validateDeliveryCode(orderId, code);
       alert('Código validado com sucesso! Pagamento confirmado.');
-      await loadData();
+      // Não recarregar dados - o WebSocket vai atualizar automaticamente em tempo real
+      console.log(`✅ Código validado para pedido ${orderId}. Aguardando atualização via WebSocket...`);
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || 'Erro ao validar código';
       alert(errorMsg);
@@ -86,7 +110,7 @@ export const OperatorDashboard = () => {
   };
 
   const filteredOrders = orders.filter(order => {
-    if (filter === 'all') return order.status !== 'pago';
+    if (filter === 'all') return true;
     return order.status === filter;
   });
 
@@ -143,89 +167,139 @@ export const OperatorDashboard = () => {
           </div>
         </div>
 
-        {/* Filtros de Pedidos */}
-        <div>
-          <h2 className="text-xl font-bold text-cake-text mb-4">Gerenciar Pedidos</h2>
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+        {/* Tabs de Navegação */}
+        <div className="bg-white rounded-xl p-2 shadow-lg border border-gray-100">
+          <div className="flex gap-2 overflow-x-auto">
             <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                filter === 'all'
-                  ? 'bg-cake-pink text-cake-text'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
+              onClick={() => setActiveTab('orders')}
+              className={`px-5 py-3 rounded-lg font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-2 ${activeTab === 'orders'
+                  ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md scale-105'
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
             >
-              Todos Ativos ({orders.filter(o => o.status !== 'pago').length})
+              <HiTruck size={20} />
+              <span>Pedidos</span>
             </button>
             <button
-              onClick={() => setFilter('aguardando')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                filter === 'aguardando'
-                  ? 'bg-cake-pink text-cake-text'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
+              onClick={() => setActiveTab('ingredients')}
+              className={`px-5 py-3 rounded-lg font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-2 ${activeTab === 'ingredients'
+                  ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md scale-105'
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
             >
-              Aguardando ({orders.filter(o => o.status === 'aguardando').length})
-            </button>
-            <button
-              onClick={() => setFilter('aceito')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                filter === 'aceito'
-                  ? 'bg-cake-pink text-cake-text'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Aceito ({orders.filter(o => o.status === 'aceito').length})
-            </button>
-            <button
-              onClick={() => setFilter('producao')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                filter === 'producao'
-                  ? 'bg-cake-pink text-cake-text'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Em Produção ({orders.filter(o => o.status === 'producao').length})
-            </button>
-            <button
-              onClick={() => setFilter('liberado')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                filter === 'liberado'
-                  ? 'bg-cake-pink text-cake-text'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Liberado ({orders.filter(o => o.status === 'liberado').length})
+              <HiCog size={20} />
+              <span>Ingredientes</span>
             </button>
           </div>
+        </div>
 
-          {/* Lista de Pedidos */}
-          {filteredOrders.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-2xl">
-              <div className="text-6xl mb-4">📦</div>
-              <h3 className="text-xl font-bold text-cake-text mb-2">
-                Nenhum pedido {filter !== 'all' ? filter : 'ativo'}
-              </h3>
-              <p className="text-gray-600">
-                Todos os pedidos estão em dia!
-              </p>
+        {/* Conteúdo das Tabs */}
+        <div>
+          {activeTab === 'orders' && (
+            <div>
+              {/* Filtros de Pedidos */}
+              <div>
+                <h2 className="text-xl font-bold text-cake-text mb-4">Gerenciar Pedidos</h2>
+                <div className="bg-white rounded-xl p-4 shadow-md border border-gray-100 mb-6">
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    <button
+                      onClick={() => setFilter('all')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${filter === 'all'
+                          ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Todos ({orders.length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('aguardando')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${filter === 'aguardando'
+                          ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Aguardando ({orders.filter(o => o.status === 'aguardando').length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('aceito')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${filter === 'aceito'
+                          ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Aceito ({orders.filter(o => o.status === 'aceito').length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('producao')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${filter === 'producao'
+                          ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Em Produção ({orders.filter(o => o.status === 'producao').length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('liberado')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${filter === 'liberado'
+                          ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Liberado ({orders.filter(o => o.status === 'liberado').length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('pago')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${filter === 'pago'
+                          ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Pago ({orders.filter(o => o.status === 'pago').length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('cancelado')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 ${filter === 'cancelado'
+                          ? 'bg-gradient-to-r from-cake-pink to-cake-dark-pink text-cake-text shadow-md'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                    >
+                      Cancelado ({orders.filter(o => o.status === 'cancelado').length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista de Pedidos */}
+                {filteredOrders.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-2xl">
+                    <div className="text-6xl mb-4">📦</div>
+                    <h3 className="text-xl font-bold text-cake-text mb-2">
+                      Nenhum pedido {filter !== 'all' ? filter : 'encontrado'}
+                    </h3>
+                    <p className="text-gray-600">
+                      Todos os pedidos estão em dia!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {filteredOrders.map((order) => (
+                      <OrderManagementCard
+                        key={order.id}
+                        order={order}
+                        onStatusChange={handleStatusChange}
+                        onValidateCode={handleValidateCode}
+                        onCancel={handleCancelOrder}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredOrders.map((order) => (
-                <OrderManagementCard
-                  key={order.id}
-                  order={order}
-                  onStatusChange={handleStatusChange}
-                  onValidateCode={handleValidateCode}
-                  onCancel={handleCancelOrder}
-                />
-              ))}
-            </div>
+          )}
+          {activeTab === 'ingredients' && (
+            <IngredientsManagementTab />
           )}
         </div>
       </div>
     </Layout>
   );
 };
-

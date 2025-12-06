@@ -12,7 +12,7 @@ export const Orders = () => {
   const { user } = useAuthStore();
   const { orders, loadOrders } = useOrderStore();
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'canceled'>('all');
 
   useEffect(() => {
     if (user) {
@@ -31,16 +31,20 @@ export const Orders = () => {
     }
     setLoading(false);
     
-    // Desconectar ao desmontar
+    // Desconectar ao desmontar apenas se realmente conectou
     return () => {
-      useWebSocketStore.getState().disconnect();
+      const { connected } = useWebSocketStore.getState();
+      if (connected) {
+        useWebSocketStore.getState().disconnect();
+      }
     };
   }, [user, loadOrders]);
 
   const filteredOrders = orders.filter((order) => {
     if (filter === 'all') return true;
     if (filter === 'active') return order.status !== 'pago' && order.status !== 'cancelado';
-    if (filter === 'completed') return order.status === 'pago' || order.status === 'cancelado';
+    if (filter === 'completed') return order.status === 'pago';
+    if (filter === 'canceled') return order.status === 'cancelado';
     return true;
   });
 
@@ -80,7 +84,7 @@ export const Orders = () => {
                 : 'bg-white text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Em Andamento ({orders.filter((o) => o.status !== 'pago').length})
+            Em Andamento ({orders.filter((o) => o.status !== 'pago' && o.status !== 'cancelado').length})
           </button>
           <button
             onClick={() => setFilter('completed')}
@@ -91,6 +95,16 @@ export const Orders = () => {
             }`}
           >
             Concluídos ({orders.filter((o) => o.status === 'pago').length})
+          </button>
+          <button
+            onClick={() => setFilter('canceled')}
+            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              filter === 'canceled'
+                ? 'bg-cake-pink text-cake-text'
+                : 'bg-white text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Cancelados ({orders.filter((o) => o.status === 'cancelado').length})
           </button>
         </div>
 
@@ -104,7 +118,13 @@ export const Orders = () => {
             <p className="text-gray-600 mb-6">
               {filter === 'all'
                 ? 'Você ainda não fez nenhum pedido'
-                : `Nenhum pedido ${filter === 'active' ? 'em andamento' : 'concluído'}`}
+                : filter === 'active'
+                ? 'Nenhum pedido em andamento'
+                : filter === 'completed'
+                ? 'Nenhum pedido concluído'
+                : filter === 'canceled'
+                ? 'Nenhum pedido cancelado'
+                : 'Nenhum pedido encontrado'}
             </p>
             <button
               onClick={() => navigate('/montar')}

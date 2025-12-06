@@ -114,19 +114,73 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   // Update or add order from WebSocket (sincroniza pedido completo)
   syncOrder: (order: Order) => {
+    console.log('🔄 syncOrder chamado:', {
+      orderId: order.id,
+      status: order.status,
+      total: order.total,
+    });
+    
     set((state) => {
       const existingIndex = state.orders.findIndex(o => o.id === order.id);
       
       if (existingIndex >= 0) {
         // Atualizar pedido existente
-        const updatedOrders = [...state.orders];
-        updatedOrders[existingIndex] = order;
+        const oldOrder = state.orders[existingIndex];
+        
+        // Verificar se realmente mudou algo
+        const hasChanges = 
+          oldOrder.status !== order.status ||
+          oldOrder.total !== order.total ||
+          oldOrder.updatedAt !== order.updatedAt;
+        
+        if (!hasChanges) {
+          console.log('⏭️ Pedido não mudou, pulando atualização:', order.id);
+          return state; // Não atualizar se não mudou nada
+        }
+        
+        // Criar novo array para garantir que o React detecte a mudança
+        const updatedOrders = state.orders.map((o, index) => 
+          index === existingIndex ? order : o
+        );
+        
+        console.log('✅ Pedido atualizado no store:', {
+          orderId: order.id,
+          oldStatus: oldOrder.status,
+          newStatus: order.status,
+          statusChanged: oldOrder.status !== order.status,
+          ordersCount: updatedOrders.length,
+          ordersAntes: state.orders.length,
+          ordersDepois: updatedOrders.length,
+        });
+        
+        // Retornar novo objeto para garantir re-render
         return { orders: updatedOrders };
       } else {
         // Adicionar novo pedido no início da lista
+        console.log('➕ Novo pedido adicionado ao store:', {
+          orderId: order.id,
+          status: order.status,
+          total: order.total,
+          ordersCount: state.orders.length + 1,
+        });
+        
+        // Criar novo array para garantir que o React detecte a mudança
         return { orders: [order, ...state.orders] };
       }
     });
+    
+    // Verificar se foi atualizado corretamente após set
+    setTimeout(() => {
+      const { orders } = useOrderStore.getState();
+      const updatedOrder = orders.find(o => o.id === order.id);
+      console.log('🔍 Verificação pós-syncOrder:', {
+        orderId: order.id,
+        encontrado: !!updatedOrder,
+        statusNoStore: updatedOrder?.status,
+        statusEsperado: order.status,
+        statusCorreto: updatedOrder?.status === order.status,
+      });
+    }, 100);
   },
   
   // Check if order can be edited (within 2 minutes)

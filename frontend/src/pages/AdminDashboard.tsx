@@ -3,6 +3,7 @@ import { Layout } from '../components/Layout/Layout';
 import { StatsCard } from '../components/Operator/StatsCard';
 import { OrderManagementCard } from '../components/Operator/OrderManagementCard';
 import { ReportsTab } from '../components/Admin/ReportsTab';
+import { IngredientsManagementTab } from '../components/Admin/IngredientsManagementTab';
 import { useOrderStore } from '../store/orderStore';
 import { useAuthStore } from '../store/authStore';
 import { useWebSocketStore } from '../store/websocketStore';
@@ -28,8 +29,24 @@ export const AdminDashboard = () => {
   const [stats, setStats] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'aguardando' | 'aceito' | 'producao' | 'liberado' | 'pago' | 'cancelado'>('all');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'stats' | 'users' | 'products'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'stats' | 'users' | 'ingredients'>('orders');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Log para debug quando orders mudar
+  useEffect(() => {
+    console.log('📊 AdminDashboard: orders atualizado', {
+      total: orders.length,
+      porStatus: {
+        aguardando: orders.filter(o => o.status === 'aguardando').length,
+        aceito: orders.filter(o => o.status === 'aceito').length,
+        producao: orders.filter(o => o.status === 'producao').length,
+        liberado: orders.filter(o => o.status === 'liberado').length,
+        pago: orders.filter(o => o.status === 'pago').length,
+        cancelado: orders.filter(o => o.status === 'cancelado').length,
+      },
+      filtroAtual: filter,
+    });
+  }, [orders, filter]);
 
   useEffect(() => {
     loadData();
@@ -45,9 +62,12 @@ export const AdminDashboard = () => {
     
     connectWebSocket();
     
-    // Desconectar ao desmontar
+    // Desconectar ao desmontar apenas se realmente conectou
     return () => {
-      useWebSocketStore.getState().disconnect();
+      const { connected } = useWebSocketStore.getState();
+      if (connected) {
+        useWebSocketStore.getState().disconnect();
+      }
     };
   }, []);
 
@@ -67,7 +87,9 @@ export const AdminDashboard = () => {
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     try {
       await ordersApi.updateStatus(orderId, newStatus);
-      await loadData();
+      // Não recarregar dados - o WebSocket vai atualizar automaticamente em tempo real
+      // Feedback visual será mostrado quando o WebSocket atualizar o pedido
+      console.log(`✅ Status do pedido ${orderId} atualizado para ${newStatus}. Aguardando atualização via WebSocket...`);
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       alert('Erro ao atualizar status do pedido');
@@ -78,7 +100,8 @@ export const AdminDashboard = () => {
     try {
       await ordersApi.validateDeliveryCode(orderId, code);
       alert('Código validado com sucesso! Pagamento confirmado.');
-      await loadData();
+      // Não recarregar dados - o WebSocket vai atualizar automaticamente em tempo real
+      console.log(`✅ Código validado para pedido ${orderId}. Aguardando atualização via WebSocket...`);
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || 'Erro ao validar código';
       alert(errorMsg);
@@ -186,15 +209,15 @@ export const AdminDashboard = () => {
               <span>Usuários</span>
             </button>
             <button
-              onClick={() => setActiveTab('products')}
+              onClick={() => setActiveTab('ingredients')}
               className={`px-5 py-3 rounded-lg font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-2 ${
-                activeTab === 'products'
+                activeTab === 'ingredients'
                   ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md scale-105'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
               }`}
             >
               <HiCog size={20} />
-              <span>Produtos</span>
+              <span>Ingredientes</span>
             </button>
           </div>
         </div>
@@ -424,40 +447,10 @@ export const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'products' && (
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-            <div className="flex flex-col desktop:flex-row justify-between items-start desktop:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <HiCog className="text-purple-600" size={28} />
-                  Gerenciamento de Produtos
-                </h2>
-                <p className="text-gray-600 mt-1">Gerencie produtos, estoque e componentes</p>
-              </div>
-              <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 font-semibold shadow-md transition-all duration-200 flex items-center gap-2">
-                <span>+</span>
-                <span>Novo Produto</span>
-              </button>
-            </div>
-            <div className="text-center py-16">
-              <div className="bg-purple-50 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                <HiCog size={48} className="text-purple-400" />
-              </div>
-              <p className="text-gray-600 text-lg mb-2">Funcionalidade em desenvolvimento</p>
-              <p className="text-sm text-gray-500">
-                Use o Django Admin para gerenciar produtos: 
-                <a 
-                  href="http://localhost:8000/admin/" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-purple-600 underline hover:text-purple-700 ml-1"
-                >
-                  http://localhost:8000/admin/
-                </a>
-              </p>
-            </div>
-          </div>
+        {activeTab === 'ingredients' && (
+          <IngredientsManagementTab />
         )}
+
       </div>
     </Layout>
   );

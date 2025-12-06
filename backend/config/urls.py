@@ -19,6 +19,15 @@ def health_check(request):
         "version": "1.0.0"
     })
 
+def cors_test(request):
+    """Endpoint de teste para verificar CORS"""
+    return JsonResponse({
+        "status": "ok",
+        "message": "CORS está funcionando!",
+        "method": request.method,
+        "origin": request.META.get('HTTP_ORIGIN', 'N/A'),
+    })
+
 def root_redirect(request):
     """Redireciona a rota raiz para a documentação da API"""
     return HttpResponseRedirect('/api/docs/')
@@ -37,6 +46,7 @@ urlpatterns = [
     
     # Health Check
     path('api/health/', health_check, name='health_check'),
+    path('api/cors-test/', cors_test, name='cors_test'),
     
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

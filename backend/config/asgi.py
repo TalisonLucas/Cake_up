@@ -8,6 +8,7 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
 """
 
 import os
+from django.conf import settings
 
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
@@ -23,13 +24,19 @@ django_asgi_app = get_asgi_application()
 # Import routing after Django is initialized
 from orders.routing import websocket_urlpatterns
 
+# Em desenvolvimento (DEBUG=True), permitir todas as origens para WebSocket
+# Em produção, usar AllowedHostsOriginValidator para segurança
+# Nota: Não usamos AuthMiddlewareStack aqui porque fazemos autenticação manual no consumer
+if settings.DEBUG:
+    websocket_application = URLRouter(websocket_urlpatterns)
+else:
+    websocket_application = AllowedHostsOriginValidator(
+        URLRouter(websocket_urlpatterns)
+    )
+
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
-            URLRouter(websocket_urlpatterns)
-        )
-    ),
+    "websocket": websocket_application,
 })
 
 

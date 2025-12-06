@@ -16,3 +16,4 @@ class NgrokSkipBrowserWarningMiddleware(MiddlewareMixin):
         response['ngrok-skip-browser-warning'] = 'true'
         return response
 
+

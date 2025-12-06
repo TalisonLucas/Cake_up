@@ -5,11 +5,18 @@ from .models import CupcakeComponent, Product
 from .serializers import CupcakeComponentSerializer, ProductSerializer
 
 
+class IsOperatorOrAdmin(IsAdminUser):
+    """Permissão customizada para operadores e admins"""
+    def has_permission(self, request, view):
+        return (request.user and request.user.is_authenticated and 
+                (request.user.is_staff or request.user.role in ['OPERATOR', 'ADMIN']))
+
+
 class CupcakeComponentViewSet(viewsets.ModelViewSet):
     """
     ViewSet para componentes de cupcake
     GET: Todos podem ver
-    POST/PUT/DELETE: Apenas admin
+    POST/PUT/DELETE: Operador e Admin podem atualizar
     """
     queryset = CupcakeComponent.objects.all()
     serializer_class = CupcakeComponentSerializer
@@ -23,7 +30,7 @@ class CupcakeComponentViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             permission_classes = [IsAuthenticatedOrReadOnly]
         else:
-            permission_classes = [IsAdminUser]
+            permission_classes = [IsOperatorOrAdmin]
         return [permission() for permission in permission_classes]
 
 

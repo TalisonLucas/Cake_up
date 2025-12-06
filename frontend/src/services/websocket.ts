@@ -71,19 +71,37 @@ export class OrderWebSocketService {
       try {
         // Conectar com token na query string
         const wsUrl = `${this.url}?token=${token}`;
+        console.log('🔗 Conectando WebSocket para:', wsUrl.replace(/token=[^&]+/, 'token=***'));
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('WebSocket conectado');
-          this.isConnecting = false;
-          this.reconnectAttempts = 0;
-          this.startPingInterval();
-          resolve();
+          console.log('WebSocket handshake completo - aguardando autenticação do servidor...');
+          // Não resolver ainda - esperar mensagem de connection_success do servidor
         };
 
         this.ws.onmessage = (event) => {
           try {
             const message: WebSocketMessage = JSON.parse(event.data);
+            
+            // Tratar mensagens de erro do servidor
+            if (message.type === 'error') {
+              console.error('Erro do servidor WebSocket:', message.error);
+              this.emit('error', message);
+              this.isConnecting = false;
+              reject(new Error(message.error || 'Erro desconhecido'));
+              return;
+            }
+            
+            // Tratar mensagem de sucesso na conexão
+            if (message.type === 'connection_success') {
+              console.log('WebSocket conectado com sucesso:', message.message);
+              this.isConnecting = false;
+              this.reconnectAttempts = 0;
+              this.startPingInterval();
+              resolve();
+              return;
+            }
+            
             this.handleMessage(message);
           } catch (error) {
             console.error('Erro ao processar mensagem WebSocket:', error);
@@ -93,7 +111,7 @@ export class OrderWebSocketService {
         this.ws.onerror = (error) => {
           console.error('Erro WebSocket:', error);
           this.isConnecting = false;
-          reject(error);
+          // Não rejeitar imediatamente, esperar onclose para ver o código
         };
 
         this.ws.onclose = (event) => {
@@ -101,9 +119,43 @@ export class OrderWebSocketService {
           this.isConnecting = false;
           this.stopPingInterval();
           
-          // Tentar reconectar se não foi fechado intencionalmente
-          if (this.shouldReconnect && event.code !== 1000) {
+          // Códigos de erro comuns:
+          // 1000 = Normal closure (fechado intencionalmente)
+          // 1006 = Abnormal closure (sem handshake completo ou conexão perdida)
+          // 4001 = Unauthorized
+          // 4002 = Internal Error
+          
+          // Se foi fechado normalmente, não fazer nada (já foi resolvido)
+          if (event.code === 1000) {
+            return;
+          }
+          
+          if (event.code === 4001) {
+            console.error('WebSocket: Autenticação falhou');
+            this.emit('error', { type: 'error', error: 'Autenticação falhou. Faça login novamente.' });
+            reject(new Error('Autenticação falhou'));
+            return;
+          }
+          
+          if (event.code === 4002) {
+            console.error('WebSocket: Erro interno do servidor');
+            this.emit('error', { type: 'error', error: 'Erro interno do servidor' });
+            reject(new Error('Erro interno do servidor'));
+            return;
+          }
+          
+          // Para código 1006 ou outros erros, tentar reconectar
+          // Não rejeitar imediatamente - deixar o scheduleReconnect lidar com isso
+          if (this.shouldReconnect) {
             this.scheduleReconnect();
+          } else {
+            // Se não deve reconectar e código é 1006, pode ser apenas cleanup do React
+            // Não rejeitar a promise nesse caso para evitar erros desnecessários
+            if (event.code !== 1006) {
+              reject(new Error(`Conexão fechada com código ${event.code}`));
+            } else {
+              console.log('WebSocket fechado com código 1006 durante cleanup - ignorando');
+            }
           }
         };
       } catch (error) {
@@ -126,9 +178,19 @@ export class OrderWebSocketService {
     }
 
     if (this.ws) {
-      this.ws.close(1000, 'Desconexão intencional');
+      // Só fechar se a conexão estiver aberta ou conectando
+      // Se estiver fechada ou nunca foi estabelecida, apenas limpar a referência
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        try {
+          this.ws.close(1000, 'Desconexão intencional');
+        } catch (error) {
+          console.warn('Erro ao fechar WebSocket:', error);
+        }
+      }
       this.ws = null;
     }
+    
+    this.isConnecting = false;
   }
 
   /**

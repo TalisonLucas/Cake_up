@@ -32,13 +32,41 @@ export const Login = () => {
     setLoading(true);
 
     try {
+      // Limpar tokens antigos antes de fazer login para evitar conflitos
+      localStorage.removeItem('auth-storage');
+      
       const data = await authApi.login(loginData.username, loginData.password);
       
       // Fazer login com dados completos (token e refreshToken já incluem o perfil do usuário)
       login(data.user, data.token, data.refreshToken);
       navigate('/');
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.';
+      console.error('Erro no login:', err);
+      
+      // Tratar erros de rede (servidor não alcançável)
+      if (!err.response) {
+        setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.');
+        return;
+      }
+      
+      // Tratar erros de autenticação
+      let errorMsg = 'Erro ao fazer login. Verifique suas credenciais.';
+      
+      if (err.response?.data) {
+        // Tratar erro de token inválido (pode acontecer se houver token antigo)
+        if (err.response.data.code === 'token_not_valid') {
+          errorMsg = 'Sessão expirada. Por favor, tente fazer login novamente.';
+          // Limpar storage em caso de token inválido
+          localStorage.removeItem('auth-storage');
+        } else {
+          errorMsg = 
+            err.response.data.detail || 
+            err.response.data.non_field_errors?.[0] || 
+            err.response.data.message || 
+            errorMsg;
+        }
+      }
+      
       setError(errorMsg);
     } finally {
       setLoading(false);

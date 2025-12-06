@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Profile } from './pages/Profile';
-import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
 import { Historia } from './pages/Historia';
 import { QuemSomos } from './pages/QuemSomos';
@@ -21,7 +20,6 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/historia" element={<Historia />} />
         <Route path="/quem-somos" element={<QuemSomos />} />
-        <Route path="/produtos" element={<Products />} />
         
         {/* Cupcake Builder */}
         <Route path="/montar" element={<MontarCupcake />} />

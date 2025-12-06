@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
 from django.db.models import Sum, Count, Avg, Q
@@ -7,6 +8,10 @@ from datetime import timedelta
 from orders.models import Order, OrderStatus, OrderItem
 from products.models import Product, CupcakeComponent
 from accounts.models import CustomUser
+from .serializers import (
+    DashboardStatsSerializer, SalesReportSerializer, ProductPerformanceSerializer,
+    OperatorPerformanceSerializer, CustomerStatsSerializer
+)
 
 
 class IsOperatorOrAdmin(IsAdminUser):
@@ -16,9 +21,10 @@ class IsOperatorOrAdmin(IsAdminUser):
                 (request.user.is_staff or request.user.role in ['OPERATOR', 'ADMIN']))
 
 
-class DashboardStatsView(APIView):
+class DashboardStatsView(GenericAPIView):
     """Estatísticas do dashboard"""
     permission_classes = [IsOperatorOrAdmin]
+    serializer_class = DashboardStatsSerializer
     
     def get(self, request):
         today = timezone.now().date()
@@ -33,9 +39,9 @@ class DashboardStatsView(APIView):
             'orders_in_production': Order.objects.filter(status=OrderStatus.EM_PRODUCAO).count(),
             'orders_ready': Order.objects.filter(status=OrderStatus.LIBERADO).count(),
             'orders_completed_today': today_orders.filter(status=OrderStatus.PAGO).count(),
-            'revenue_today': today_orders.filter(status=OrderStatus.PAGO).aggregate(
+            'revenue_today': float(today_orders.filter(status=OrderStatus.PAGO).aggregate(
                 total=Sum('total')
-            )['total'] or 0,
+            )['total'] or 0),
             'total_clients': CustomUser.objects.filter(role='CLIENT').count(),
         }
         
@@ -48,9 +54,10 @@ class DashboardStatsView(APIView):
         return Response(stats)
 
 
-class SalesReportView(APIView):
+class SalesReportView(GenericAPIView):
     """Relatório de vendas"""
     permission_classes = [IsOperatorOrAdmin]
+    serializer_class = SalesReportSerializer
     
     def get(self, request):
         # Parâmetros de filtro
@@ -91,9 +98,10 @@ class SalesReportView(APIView):
         return Response(report)
 
 
-class ProductPerformanceView(APIView):
+class ProductPerformanceView(GenericAPIView):
     """Relatório de performance de produtos"""
     permission_classes = [IsOperatorOrAdmin]
+    serializer_class = ProductPerformanceSerializer
     
     def get(self, request):
         # Produtos mais vendidos
@@ -123,9 +131,10 @@ class ProductPerformanceView(APIView):
         return Response(report)
 
 
-class OperatorPerformanceView(APIView):
+class OperatorPerformanceView(GenericAPIView):
     """Relatório de performance de operadores"""
     permission_classes = [IsAdminUser]  # Apenas admins
+    serializer_class = OperatorPerformanceSerializer
     
     def get(self, request):
         # Performance dos operadores
@@ -151,9 +160,10 @@ class OperatorPerformanceView(APIView):
         return Response(report)
 
 
-class CustomerStatsView(APIView):
+class CustomerStatsView(GenericAPIView):
     """Estatísticas de clientes"""
     permission_classes = [IsOperatorOrAdmin]
+    serializer_class = CustomerStatsSerializer
     
     def get(self, request):
         # Clientes mais ativos

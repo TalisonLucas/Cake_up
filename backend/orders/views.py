@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import Order, OrderStatus
 from .serializers import (
     OrderSerializer, OrderCreateSerializer, OrderUpdateSerializer,
@@ -12,6 +13,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter('id', int, OpenApiParameter.PATH, description='ID do pedido')
+    ]
+)
 class OrderViewSet(viewsets.ModelViewSet):
     """ViewSet para pedidos"""
     permission_classes = [IsAuthenticated]
@@ -34,6 +40,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Order.objects.none()
         # Usuários veem apenas seus pedidos
         # Operadores e admins veem todos
         user = self.request.user

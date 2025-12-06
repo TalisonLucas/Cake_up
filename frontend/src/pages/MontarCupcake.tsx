@@ -30,14 +30,16 @@ export const MontarCupcake = () => {
   const [coberturas, setCoberturas] = useState<CupcakeComponent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Carregar componentes da API
+  // Carregar componentes da API (apenas disponíveis para clientes)
   useEffect(() => {
     const loadComponents = async () => {
       try {
-        const allComponents = await cupcakeComponentsApi.getAll();
-        setMassas(allComponents.filter((c: CupcakeComponent) => c.type === 'massa'));
-        setRecheios(allComponents.filter((c: CupcakeComponent) => c.type === 'recheio'));
-        setCoberturas(allComponents.filter((c: CupcakeComponent) => c.type === 'cobertura'));
+        // getAll() já filtra apenas disponíveis por padrão
+        const allComponents = await cupcakeComponentsApi.getAll(false);
+        // Filtro adicional para garantir apenas disponíveis
+        setMassas(allComponents.filter((c: CupcakeComponent) => c.type === 'massa' && c.disponivel));
+        setRecheios(allComponents.filter((c: CupcakeComponent) => c.type === 'recheio' && c.disponivel));
+        setCoberturas(allComponents.filter((c: CupcakeComponent) => c.type === 'cobertura' && c.disponivel));
       } catch (error) {
         console.error('Erro ao carregar componentes:', error);
       } finally {

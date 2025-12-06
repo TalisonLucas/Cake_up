@@ -32,9 +32,15 @@ export const ReportsTab = () => {
         const data = await reportsApi.getCustomersStats();
         setCustomersData(data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar relatórios:', error);
-      alert('Erro ao carregar relatórios');
+      const errorMessage = error.response?.data?.detail || error.response?.data?.error || error.message || 'Erro ao carregar relatórios';
+      console.error('Detalhes do erro:', {
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      alert(`Erro ao carregar relatórios: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

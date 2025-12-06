@@ -122,3 +122,4 @@ O aviso do ngrok aparece apenas **uma vez por visitante**. Se você já viu o av
 - Usar modo anônimo
 - Ou aguardar alguns minutos
 
+

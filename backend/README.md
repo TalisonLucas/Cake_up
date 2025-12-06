@@ -167,6 +167,17 @@ python manage.py createsuperuser
 ```
 
 8. **Iniciar servidor:**
+
+**Opção 1: Script automático (recomendado)**
+```bash
+# Windows - Iniciar localmente (sem ngrok)
+start-service.bat
+
+# Windows - Iniciar com ngrok
+start-ngrok.bat
+```
+
+**Opção 2: Manual**
 ```bash
 # Para desenvolvimento local
 python manage.py runserver

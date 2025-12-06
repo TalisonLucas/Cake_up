@@ -77,13 +77,6 @@ export const Header = ({ title }: HeaderProps) => {
               >
                 Home
               </Link>
-              <Link
-                to="/produtos"
-                className="block px-4 py-3 hover:bg-cake-pink transition-colors"
-                onClick={() => setMenuOpen(false)}
-              >
-                Produtos
-              </Link>
               {isAuthenticated && (
                 <>
                   {user?.role === 'admin' ? (

@@ -1,3 +1,4 @@
+from typing import List, Dict, Any
 from rest_framework import serializers
 from .models import Conversation, Message
 
@@ -32,7 +33,7 @@ class ConversationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
-    def get_participants_details(self, obj):
+    def get_participants_details(self, obj: Conversation) -> List[Dict[str, Any]]:
         return [
             {
                 'id': p.id,
@@ -43,7 +44,7 @@ class ConversationSerializer(serializers.ModelSerializer):
             for p in obj.participants.all()
         ]
     
-    def get_unread_count(self, obj):
+    def get_unread_count(self, obj: Conversation) -> int:
         request = self.context.get('request')
         if request and request.user:
             return obj.messages.filter(is_read=False).exclude(sender=request.user).count()
@@ -56,5 +57,6 @@ class ConversationCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
         fields = ['conversation_type', 'participants']
+
 
 
