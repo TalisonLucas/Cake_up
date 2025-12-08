@@ -32,8 +32,21 @@ class IsOperatorOrAdmin(BasePermission):
     """Permite acesso a operadores e administradores"""
     
     def has_permission(self, request, view):
-        return (request.user and request.user.is_authenticated and 
-                (request.user.role in ['OPERATOR', 'ADMIN'] or request.user.is_staff))
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        user_role = getattr(request.user, 'role', None)
+        is_staff = getattr(request.user, 'is_staff', False)
+        
+        has_permission = (user_role in ['OPERATOR', 'ADMIN'] or is_staff)
+        
+        # Debug log (remover em produção)
+        if not has_permission:
+            print(f"[DEBUG IsOperatorOrAdmin] Negado - User: {request.user.username}, Role: {user_role}, is_staff: {is_staff}, Method: {request.method}")
+        else:
+            print(f"[DEBUG IsOperatorOrAdmin] Permitido - User: {request.user.username}, Role: {user_role}, is_staff: {is_staff}, Method: {request.method}")
+        
+        return has_permission
 
 
 class IsOwnerOrReadOnly(BasePermission):

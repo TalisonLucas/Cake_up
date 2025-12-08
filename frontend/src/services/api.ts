@@ -288,7 +288,7 @@ const mapOrderItemToCupcake = (item: any): Cupcake => {
         };
     
     // Calcular preço total (soma dos componentes * quantidade)
-    const precoUnitario = parseFloat(massa.price) + parseFloat(recheio.price) + parseFloat(cobertura.price);
+    const precoUnitario = massa.price + recheio.price + cobertura.price;
     const precoTotal = precoUnitario * (item.quantity || 1);
     
     return {

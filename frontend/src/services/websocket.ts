@@ -29,7 +29,7 @@ const getWebSocketUrl = (): string => {
 const WS_BASE_URL = getWebSocketUrl();
 
 export interface WebSocketMessage {
-  type: 'order_status_update' | 'order_created' | 'error' | 'ping' | 'pong';
+  type: 'order_status_update' | 'order_created' | 'error' | 'ping' | 'pong' | 'connection_success';
   order?: Order;
   message?: string;
   error?: string;

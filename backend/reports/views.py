@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
+from config.permissions import IsOperatorOrAdmin
 from django.db.models import Sum, Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
@@ -12,13 +13,6 @@ from .serializers import (
     DashboardStatsSerializer, SalesReportSerializer, ProductPerformanceSerializer,
     OperatorPerformanceSerializer, CustomerStatsSerializer
 )
-
-
-class IsOperatorOrAdmin(IsAdminUser):
-    """Permissão customizada para operadores e admins"""
-    def has_permission(self, request, view):
-        return (request.user and request.user.is_authenticated and 
-                (request.user.is_staff or request.user.role in ['OPERATOR', 'ADMIN']))
 
 
 class DashboardStatsView(GenericAPIView):

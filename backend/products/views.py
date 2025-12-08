@@ -1,15 +1,9 @@
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
+from config.permissions import IsOperatorOrAdmin
 from .models import CupcakeComponent, Product
 from .serializers import CupcakeComponentSerializer, ProductSerializer
-
-
-class IsOperatorOrAdmin(IsAdminUser):
-    """Permissão customizada para operadores e admins"""
-    def has_permission(self, request, view):
-        return (request.user and request.user.is_authenticated and 
-                (request.user.is_staff or request.user.role in ['OPERATOR', 'ADMIN']))
 
 
 class CupcakeComponentViewSet(viewsets.ModelViewSet):
@@ -27,9 +21,13 @@ class CupcakeComponentViewSet(viewsets.ModelViewSet):
     ordering = ['type', 'name']
     
     def get_permissions(self):
+        # Debug: verificar qual action está sendo usado
+        print(f"[DEBUG CupcakeComponentViewSet] Action: {self.action}, Method: {self.request.method if hasattr(self, 'request') else 'N/A'}")
+        
         if self.action in ['list', 'retrieve']:
             permission_classes = [IsAuthenticatedOrReadOnly]
         else:
+            # Para create, update, partial_update, destroy
             permission_classes = [IsOperatorOrAdmin]
         return [permission() for permission in permission_classes]
 
