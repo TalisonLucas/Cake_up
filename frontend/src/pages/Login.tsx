@@ -39,7 +39,15 @@ export const Login = () => {
       
       // Fazer login com dados completos (token e refreshToken já incluem o perfil do usuário)
       login(data.user, data.token, data.refreshToken);
-      navigate('/');
+      
+      // Redirecionar baseado no role do usuário
+      if (data.user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (data.user.role === 'operator') {
+        navigate('/operador/dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       console.error('Erro no login:', err);
       

@@ -9,6 +9,11 @@ export interface User {
   role: UserRole;
   avatar?: string;
   createdAt: string;
+  isActive?: boolean;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  cpf?: string;
 }
 
 export interface Address {

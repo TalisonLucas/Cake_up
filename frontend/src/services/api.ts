@@ -617,4 +617,137 @@ export const reportsApi = {
   },
 };
 
+// Users management endpoints (Admin only)
+export const usersApi = {
+  getAll: async (filters?: { role?: string; isActive?: boolean; search?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.role) params.append('role', filters.role);
+    if (filters?.isActive !== undefined) params.append('is_active', filters.isActive.toString());
+    if (filters?.search) params.append('search', filters.search);
+    
+    const queryString = params.toString();
+    const url = `/auth/admin/users/${queryString ? `?${queryString}` : ''}`;
+    const response = await api.get<any>(url);
+    
+    // O backend pode retornar com paginação { results: [], count: number } ou array direto []
+    const usersArray = Array.isArray(response.data) 
+      ? response.data 
+      : (response.data.results || []);
+    
+    // Mapear resposta do backend para o formato do frontend
+    return {
+      users: usersArray.map((user: any) => ({
+        id: user.id.toString(),
+        name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role.toLowerCase() as 'client' | 'operator' | 'admin',
+        username: user.username,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        cpf: user.cpf,
+        isActive: user.is_active,
+        createdAt: user.created_at || user.date_joined,
+      })),
+      count: response.data.count || usersArray.length,
+    };
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get<any>(`/auth/admin/users/${id}/`);
+    return {
+      id: response.data.id.toString(),
+      name: `${response.data.first_name || ''} ${response.data.last_name || ''}`.trim() || response.data.username,
+      email: response.data.email,
+      phone: response.data.phone,
+      role: response.data.role.toLowerCase() as 'client' | 'operator' | 'admin',
+      username: response.data.username,
+      firstName: response.data.first_name,
+      lastName: response.data.last_name,
+      cpf: response.data.cpf,
+      isActive: response.data.is_active,
+      createdAt: response.data.created_at || response.data.date_joined,
+    };
+  },
+
+  create: async (userData: {
+    username: string;
+    email: string;
+    password: string;
+    password2: string;
+    firstName: string;
+    lastName: string;
+    role: 'CLIENT' | 'OPERATOR' | 'ADMIN';
+    phone?: string;
+    cpf?: string;
+    isActive?: boolean;
+  }) => {
+    const response = await api.post<any>('/auth/admin/users/', {
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      password2: userData.password2,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      role: userData.role,
+      phone: userData.phone || '',
+      cpf: userData.cpf || '',
+      is_active: userData.isActive !== undefined ? userData.isActive : true,
+    });
+    
+    return {
+      id: response.data.id.toString(),
+      name: `${response.data.first_name || ''} ${response.data.last_name || ''}`.trim() || response.data.username,
+      email: response.data.email,
+      phone: response.data.phone,
+      role: response.data.role.toLowerCase() as 'client' | 'operator' | 'admin',
+      username: response.data.username,
+      firstName: response.data.first_name,
+      lastName: response.data.last_name,
+      cpf: response.data.cpf,
+      isActive: response.data.is_active,
+      createdAt: response.data.created_at || response.data.date_joined,
+    };
+  },
+
+  update: async (id: string, userData: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    role?: 'CLIENT' | 'OPERATOR' | 'ADMIN';
+    phone?: string;
+    cpf?: string;
+    isActive?: boolean;
+  }) => {
+    const payload: any = {};
+    if (userData.email !== undefined) payload.email = userData.email;
+    if (userData.firstName !== undefined) payload.first_name = userData.firstName;
+    if (userData.lastName !== undefined) payload.last_name = userData.lastName;
+    if (userData.role !== undefined) payload.role = userData.role;
+    if (userData.phone !== undefined) payload.phone = userData.phone;
+    if (userData.cpf !== undefined) payload.cpf = userData.cpf;
+    if (userData.isActive !== undefined) payload.is_active = userData.isActive;
+    
+    const response = await api.patch<any>(`/auth/admin/users/${id}/`, payload);
+    
+    return {
+      id: response.data.id.toString(),
+      name: `${response.data.first_name || ''} ${response.data.last_name || ''}`.trim() || response.data.username,
+      email: response.data.email,
+      phone: response.data.phone,
+      role: response.data.role.toLowerCase() as 'client' | 'operator' | 'admin',
+      username: response.data.username,
+      firstName: response.data.first_name,
+      lastName: response.data.last_name,
+      cpf: response.data.cpf,
+      isActive: response.data.is_active,
+      createdAt: response.data.created_at || response.data.date_joined,
+    };
+  },
+
+  toggleActive: async (id: string, isActive: boolean) => {
+    return usersApi.update(id, { isActive });
+  },
+};
+
 export default api;

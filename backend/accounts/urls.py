@@ -3,11 +3,12 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     CustomTokenObtainPairView, RegisterView, UserProfileView, 
-    ChangePasswordView, AddressViewSet
+    ChangePasswordView, AddressViewSet, UserAdminViewSet
 )
 
 router = DefaultRouter()
 router.register(r'addresses', AddressViewSet, basename='address')
+router.register(r'admin/users', UserAdminViewSet, basename='admin-users')
 
 urlpatterns = [
     # JWT Authentication (aceita email ou username)

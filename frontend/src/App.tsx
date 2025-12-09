@@ -55,7 +55,7 @@ function App() {
         <Route
           path="/operador/dashboard"
           element={
-            <ProtectedRoute requireRole="operator">
+            <ProtectedRoute requireRole={['operator', 'admin']}>
               <OperatorDashboard />
             </ProtectedRoute>
           }

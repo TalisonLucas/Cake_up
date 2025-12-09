@@ -97,3 +97,54 @@ class ChangePasswordSerializer(serializers.Serializer):
         if attrs['new_password'] != attrs['new_password2']:
             raise serializers.ValidationError({"new_password": "As senhas não coincidem."})
         return attrs
+
+
+class UserAdminSerializer(serializers.ModelSerializer):
+    """Serializer para listagem e visualização de usuários pelo admin"""
+    
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'role', 'phone', 'cpf', 'is_active', 'is_staff', 'is_superuser',
+            'date_joined', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'date_joined', 'created_at', 'updated_at']
+
+
+class UserAdminCreateSerializer(serializers.ModelSerializer):
+    """Serializer para criação de usuários pelo admin"""
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
+    
+    class Meta:
+        model = CustomUser
+        fields = [
+            'username', 'email', 'password', 'password2',
+            'first_name', 'last_name', 'role', 'phone', 'cpf',
+            'is_active', 'is_staff'
+        ]
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "As senhas não coincidem."})
+        return attrs
+    
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        password = validated_data.pop('password')
+        user = CustomUser.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class UserAdminUpdateSerializer(serializers.ModelSerializer):
+    """Serializer para atualização de usuários pelo admin"""
+    
+    class Meta:
+        model = CustomUser
+        fields = [
+            'email', 'first_name', 'last_name', 'role', 'phone', 'cpf',
+            'is_active', 'is_staff'
+        ]

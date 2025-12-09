@@ -4,6 +4,7 @@ import { StatsCard } from '../components/Operator/StatsCard';
 import { OrderManagementCard } from '../components/Operator/OrderManagementCard';
 import { ReportsTab } from '../components/Admin/ReportsTab';
 import { IngredientsManagementTab } from '../components/Admin/IngredientsManagementTab';
+import { UsersManagementTab } from '../components/Admin/UsersManagementTab';
 import { useOrderStore } from '../store/orderStore';
 import { useAuthStore } from '../store/authStore';
 import { useWebSocketStore } from '../store/websocketStore';
@@ -413,38 +414,7 @@ export const AdminDashboard = () => {
         )}
 
         {activeTab === 'users' && (
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-            <div className="flex flex-col desktop:flex-row justify-between items-start desktop:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <HiUsers className="text-purple-600" size={28} />
-                  Gerenciamento de Usuários
-                </h2>
-                <p className="text-gray-600 mt-1">Gerencie usuários, permissões e acessos</p>
-              </div>
-              <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 font-semibold shadow-md transition-all duration-200 flex items-center gap-2">
-                <span>+</span>
-                <span>Novo Usuário</span>
-              </button>
-            </div>
-            <div className="text-center py-16">
-              <div className="bg-purple-50 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                <HiUsers size={48} className="text-purple-400" />
-              </div>
-              <p className="text-gray-600 text-lg mb-2">Funcionalidade em desenvolvimento</p>
-              <p className="text-sm text-gray-500">
-                Use o Django Admin para gerenciar usuários: 
-                <a 
-                  href="http://localhost:8000/admin/" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-purple-600 underline hover:text-purple-700 ml-1"
-                >
-                  http://localhost:8000/admin/
-                </a>
-              </p>
-            </div>
-          </div>
+          <UsersManagementTab />
         )}
 
         {activeTab === 'ingredients' && (

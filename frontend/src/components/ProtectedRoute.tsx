@@ -4,7 +4,7 @@ import { type UserRole } from '../types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireRole?: UserRole;
+  requireRole?: UserRole | UserRole[];
 }
 
 export const ProtectedRoute = ({ children, requireRole }: ProtectedRouteProps) => {
@@ -15,9 +15,15 @@ export const ProtectedRoute = ({ children, requireRole }: ProtectedRouteProps) =
   }
 
   // Verificar se requer role específico
-  if (requireRole && user?.role !== requireRole) {
-    // Se o usuário não tem o role necessário, redirecionar para home
-    return <Navigate to="/" replace />;
+  if (requireRole) {
+    const hasAccess = Array.isArray(requireRole)
+      ? requireRole.includes(user?.role as UserRole)
+      : user?.role === requireRole;
+    
+    if (!hasAccess) {
+      // Se o usuário não tem o role necessário, redirecionar para home
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <>{children}</>;

@@ -1,8 +1,12 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout/Layout';
+import { useAuthStore } from '../store/authStore';
 
 export const Home = () => {
-  const menuItems = [
+  const { user } = useAuthStore();
+
+  const allMenuItems = [
     {
       title: 'Monte seu Cupcake',
       path: '/montar',
@@ -32,6 +36,46 @@ export const Home = () => {
       description: 'Sobre a Cake Up',
     },
   ];
+
+  // Filtrar menuItems e adicionar card Dashboard para operadores e admins
+  const menuItems = useMemo(() => {
+    let items = [...allMenuItems];
+    
+    // Remover "Meus Pedidos" para operadores e admins
+    if (user?.role === 'operator' || user?.role === 'admin') {
+      items = items.filter(item => item.path !== '/meus-pedidos');
+      
+      // Criar card Dashboard baseado no role
+      const dashboardCard = user?.role === 'admin' 
+        ? {
+            title: 'Dashboard Admin',
+            path: '/admin/dashboard',
+            color: 'bg-cake-cyan',
+            icon: '👑',
+            description: 'Painel de controle administrativo',
+          }
+        : {
+            title: 'Dashboard Operador',
+            path: '/operador/dashboard',
+            color: 'bg-cake-cyan',
+            icon: '🎯',
+            description: 'Gerenciar pedidos e operações',
+          };
+      
+      // Reorganizar: Dashboard primeiro, depois História, Quem somos, e Monte seu Cupcake por último
+      // Após filtrar, items tem: Monte seu Cupcake, História, Quem somos
+      // Queremos: Dashboard, História, Quem somos, Monte seu Cupcake
+      const monteCupcake = items.find(item => item.path === '/montar');
+      const outros = items.filter(item => item.path !== '/montar');
+      
+      items = [dashboardCard, ...outros];
+      if (monteCupcake) {
+        items.push(monteCupcake);
+      }
+    }
+    
+    return items;
+  }, [user]);
 
   return (
     <Layout title="Home">

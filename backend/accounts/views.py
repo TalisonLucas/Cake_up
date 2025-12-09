@@ -4,12 +4,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth import update_session_auth_hash
+from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import CustomUser, Address
 from .serializers import (
     UserSerializer, UserCreateSerializer, UserUpdateSerializer,
-    AddressSerializer, ChangePasswordSerializer, CustomTokenObtainPairSerializer
+    AddressSerializer, ChangePasswordSerializer, CustomTokenObtainPairSerializer,
+    UserAdminSerializer, UserAdminCreateSerializer, UserAdminUpdateSerializer
 )
+from config.permissions import IsAdmin
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -94,3 +97,49 @@ class AddressViewSet(viewsets.ModelViewSet):
         address.is_default = True
         address.save()
         return Response({'message': 'Endereço definido como padrão.'})
+
+
+class UserAdminViewSet(viewsets.ModelViewSet):
+    """ViewSet para gerenciamento de usuários pelo admin"""
+    permission_classes = [IsAdmin]
+    queryset = CustomUser.objects.all().order_by('-created_at')
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserAdminCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserAdminUpdateSerializer
+        return UserAdminSerializer
+    
+    def get_queryset(self):
+        """Filtrar queryset com suporte a busca e filtros"""
+        queryset = CustomUser.objects.all().order_by('-created_at')
+        
+        # Filtro por role
+        role = self.request.query_params.get('role', None)
+        if role:
+            queryset = queryset.filter(role=role.upper())
+        
+        # Filtro por status (is_active)
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+        
+        # Busca por nome, email ou username
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(username__icontains=search) |
+                Q(email__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search)
+            )
+        
+        return queryset
+    
+    def destroy(self, request, *args, **kwargs):
+        """Não permitir exclusão - usar inativação ao invés"""
+        return Response(
+            {"error": "Exclusão de usuários não é permitida. Use a atualização para desativar o usuário (is_active=False)."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
