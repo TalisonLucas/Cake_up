@@ -6,6 +6,7 @@ import { IngredientsManagementTab } from '../components/Admin/IngredientsManagem
 import { useOrderStore } from '../store/orderStore';
 import { useAuthStore } from '../store/authStore';
 import { useWebSocketStore } from '../store/websocketStore';
+import { useChatStore } from '../store/chatStore';
 import { reportsApi, ordersApi } from '../services/api';
 import { type OrderStatus } from '../types';
 import { HiClock, HiCheckCircle, HiTruck, HiCurrencyDollar, HiCog } from 'react-icons/hi';
@@ -13,6 +14,7 @@ import { HiClock, HiCheckCircle, HiTruck, HiCurrencyDollar, HiCog } from 'react-
 export const OperatorDashboard = () => {
   const { orders, loadOrders } = useOrderStore();
   const { user } = useAuthStore();
+  const { loadConversations } = useChatStore();
   const [stats, setStats] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'aguardando' | 'aceito' | 'producao' | 'liberado' | 'pago' | 'cancelado'>('all');
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,8 @@ export const OperatorDashboard = () => {
 
   useEffect(() => {
     loadData();
+    // Carregar conversas para exibir badges de notificação
+    loadConversations();
 
     // Conectar WebSocket para atualizações em tempo real
     const connectWebSocket = async () => {
@@ -48,14 +52,27 @@ export const OperatorDashboard = () => {
 
     connectWebSocket();
 
+    // Atualizar conversas periodicamente para manter badges atualizados (a cada 30 segundos)
+    const conversationInterval = setInterval(() => {
+      loadConversations();
+    }, 30000);
+
+    // Atualizar conversas quando a janela receber foco (usuário volta para a aba)
+    const handleFocus = () => {
+      loadConversations();
+    };
+    window.addEventListener('focus', handleFocus);
+
     // Desconectar ao desmontar apenas se realmente conectou
     return () => {
+      clearInterval(conversationInterval);
+      window.removeEventListener('focus', handleFocus);
       const { connected } = useWebSocketStore.getState();
       if (connected) {
         useWebSocketStore.getState().disconnect();
       }
     };
-  }, []);
+  }, [loadConversations]);
 
   const loadData = async () => {
     try {

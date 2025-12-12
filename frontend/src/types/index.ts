@@ -140,7 +140,21 @@ export interface Conversation {
   unreadCount: number;
   createdAt: string;
   updatedAt: string;
-  relatedOrderId?: string;
+  relatedOrderId?: string | number;
+  assignedOperatorId?: string | number;
+  orderDetails?: {
+    id: string | number;
+    status: string;
+    statusDisplay: string;
+    total: string;
+    userName: string;
+  };
+  assignedOperatorDetails?: {
+    id: string | number;
+    username: string;
+    fullName: string;
+    role: string;
+  };
 }
 
 // ============ OPERATOR ============

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { HiChat, HiEye } from 'react-icons/hi';
+import { HiEye } from 'react-icons/hi';
 import { StatusBadge } from './StatusBadge';
 import { OrderTimer } from './OrderTimer';
+import { OrderChatButton } from '../Chat/OrderChatButton';
 import type { Order } from '../../types';
 import { useOrderStore } from '../../store/orderStore';
 
@@ -85,12 +86,11 @@ export const OrderCard = ({ order, showTimer = true, showActions = true }: Order
             <HiEye size={18} />
             Ver Detalhes
           </Link>
-          <button
-            className="px-4 py-2 bg-white hover:bg-gray-50 text-cake-text border-2 border-cake-pink rounded-lg transition-colors"
-            aria-label="Chat"
-          >
-            <HiChat size={18} />
-          </button>
+          <OrderChatButton
+            orderId={order.id}
+            variant="icon"
+            className="px-4 py-2 border-2 border-cake-pink rounded-lg"
+          />
         </div>
       )}
     </div>

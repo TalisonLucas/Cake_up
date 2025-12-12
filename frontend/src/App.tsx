@@ -9,6 +9,7 @@ import { MontarCupcake } from './pages/MontarCupcake';
 import { Carrinho } from './pages/Carrinho';
 import { OperatorDashboard } from './pages/OperatorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { Chat } from './pages/Chat';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -47,6 +48,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Orders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <Chat />
             </ProtectedRoute>
           }
         />

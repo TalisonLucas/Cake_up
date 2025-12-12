@@ -538,27 +538,101 @@ export const cupcakeComponentsApi = {
 // Chat endpoints
 export const chatApi = {
   getConversations: async () => {
-    const response = await api.get<{ results: any[] }>('/chat/conversations/');
-    return response.data.results || [];
+    try {
+      console.log('📤 Requisição GET /chat/conversations/');
+      const response = await api.get<any>('/chat/conversations/');
+      console.log('✅ Resposta recebida de /chat/conversations/:', {
+        status: response.status,
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        hasResults: !!response.data?.results,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+      });
+      
+      // Tratar resposta paginada (com results) ou não paginada (array direto)
+      let conversations: any[] = [];
+      
+      if (Array.isArray(response.data)) {
+        // Resposta não paginada: array direto
+        conversations = response.data;
+        console.log('📋 Resposta não paginada, array direto:', conversations.length, 'conversas');
+      } else if (response.data?.results && Array.isArray(response.data.results)) {
+        // Resposta paginada: { results: [...], count: ... }
+        conversations = response.data.results;
+        console.log('📋 Resposta paginada:', conversations.length, 'conversas de', response.data.count, 'total');
+      } else if (response.data) {
+        // Tentar tratar como objeto único ou outro formato
+        console.warn('⚠️ Formato de resposta inesperado:', response.data);
+        conversations = [];
+      }
+      
+      console.log('✅ Retornando', conversations.length, 'conversas');
+      return conversations;
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar conversas:', error);
+      throw error;
+    }
   },
 
   getMessages: async (conversationId: string) => {
-    const response = await api.get<{ results: any[] }>(`/chat/conversations/${conversationId}/messages/`);
-    return response.data.results || [];
+    try {
+      const response = await api.get<any>(`/chat/conversations/${conversationId}/messages/`);
+      
+      // Tratar resposta paginada (com results) ou não paginada (array direto)
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data?.results && Array.isArray(response.data.results)) {
+        return response.data.results;
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar mensagens:', error);
+      throw error;
+    }
   },
 
   sendMessage: async (conversationId: string, message: string) => {
-    const response = await api.post(`/chat/conversations/${conversationId}/messages/`, {
-      message,
+    const response = await api.post(`/chat/conversations/${conversationId}/send_message/`, {
+      content: message,
     });
     return response.data;
   },
 
   createConversation: async (type: string, participantIds: string[]) => {
     const response = await api.post('/chat/conversations/', {
-      type,
+      conversation_type: type,
       participants: participantIds,
     });
+    return response.data;
+  },
+
+  createConversationFromOrder: async (orderId: string | number) => {
+    const response = await api.post('/chat/conversations/create_from_order/', {
+      order_id: orderId,
+    });
+    return response.data;
+  },
+
+  assignOperator: async (conversationId: string, operatorId: string | number) => {
+    const response = await api.post(`/chat/conversations/${conversationId}/assign_operator/`, {
+      operator_id: operatorId,
+    });
+    return response.data;
+  },
+
+  callAdmin: async (conversationId: string) => {
+    const response = await api.post(`/chat/conversations/${conversationId}/call_admin/`);
+    return response.data;
+  },
+
+  markResolved: async (conversationId: string) => {
+    const response = await api.post(`/chat/conversations/${conversationId}/mark_resolved/`);
+    return response.data;
+  },
+
+  markAllRead: async (conversationId: string) => {
+    const response = await api.post(`/chat/conversations/${conversationId}/mark_all_read/`);
     return response.data;
   },
 };
