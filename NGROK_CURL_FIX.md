@@ -143,3 +143,7 @@ ngrok http 8000 --request-header-add "ngrok-skip-browser-warning: true"
 Ou criar arquivo de configuração (ver `NGROK_SKIP_WARNING_FIX.md`).
 
 
+
+
+
+

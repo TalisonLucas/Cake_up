@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { Conversation, ChatMessage } from '../types';
 import { chatApi } from '../services/api';
+import { chatWebSocketService } from '../services/chatWebSocket';
+import { useAuthStore } from './authStore';
 
 // Helper function to normalize status (handle both uppercase and lowercase)
 const normalizeStatus = (status: string | undefined): 'open' | 'resolved' | 'closed' => {
@@ -74,6 +76,9 @@ interface ChatState {
   assignOperator: (conversationId: string, operatorId: string | number) => Promise<void>;
   callAdmin: (conversationId: string) => Promise<Conversation>;
   markResolved: (conversationId: string) => Promise<void>;
+  connectWebSocket: () => Promise<void>;
+  disconnectWebSocket: () => void;
+  joinConversation: (conversationId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -319,6 +324,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       console.error('Erro ao chamar administrador:', error);
       throw error;
     }
+  },
+
+  connectWebSocket: async () => {
+    const token = useAuthStore.getState().token;
+    if (!token) return;
+    await chatWebSocketService.connect(token);
+  },
+
+  disconnectWebSocket: () => {
+    chatWebSocketService.disconnect();
+  },
+
+  joinConversation: (conversationId) => {
+    chatWebSocketService.joinConversation(conversationId);
   },
 
   // Mark conversation as resolved

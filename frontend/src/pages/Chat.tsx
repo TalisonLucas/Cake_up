@@ -13,20 +13,33 @@ type ConversationFilter = 'all' | 'orders' | 'operator-admin';
 export const Chat = () => {
   const location = useLocation();
   const { user } = useAuthStore();
-  const { error: chatError } = useChatStore();
+  const { error: chatError, connectWebSocket, disconnectWebSocket, setActiveConversation, loadConversations } = useChatStore();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [filter, setFilter] = useState<ConversationFilter>('all');
+
+  // Conectar WebSocket e carregar conversas quando componente montar
+  useEffect(() => {
+    if (user) {
+      connectWebSocket();
+      loadConversations();
+    }
+
+    return () => {
+      disconnectWebSocket();
+    };
+  }, [user, connectWebSocket, disconnectWebSocket, loadConversations]);
 
   // Abrir conversa se veio do state (ex: ao clicar em OrderChatButton)
   useEffect(() => {
     const state = location.state as { conversationId?: string } | null;
     if (state?.conversationId) {
       setActiveConversationId(state.conversationId);
+      setActiveConversation(state.conversationId);
       // Limpar state para não abrir novamente ao navegar
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, setActiveConversation]);
 
   const isClient = user?.role === 'client';
   const isOperator = user?.role === 'operator';
@@ -34,10 +47,12 @@ export const Chat = () => {
 
   const handleSelectConversation = (conversationId: string) => {
     setActiveConversationId(conversationId);
+    setActiveConversation(conversationId);
   };
 
   const handleNewConversation = (conversationId: string) => {
     setActiveConversationId(conversationId);
+    setActiveConversation(conversationId);
     setShowUserSelector(false);
   };
 
@@ -143,7 +158,10 @@ export const Chat = () => {
               <div className="flex-1 flex flex-col h-full">
                 <ChatWindow
                   conversationId={activeConversationId}
-                  onClose={() => setActiveConversationId(null)}
+                  onClose={() => {
+                    setActiveConversationId(null);
+                    setActiveConversation(null);
+                  }}
                 />
               </div>
             ) : (

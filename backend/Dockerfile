@@ -14,13 +14,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . /app/
 
-# Expose port
+# Expose port (local Docker). No Railway o processo escuta $PORT.
 EXPOSE 8000
 
-# Run migrations, populate database and start ASGI server
+# Migrate and start ASGI server. populate_db roda uma vez, no shell do Railway.
 CMD python manage.py migrate && \
-    python manage.py populate_db && \
-    daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application
 
 
 

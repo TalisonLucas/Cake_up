@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { HiX, HiPaperAirplane, HiUserCircle, HiShieldCheck } from 'react-icons/hi';
-import type { ChatMessage, Conversation } from '../../types';
+import type { ChatMessage } from '../../types';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 
@@ -24,7 +24,6 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
     conversations,
     callAdmin,
     markResolved,
-    assignOperator
   } = useChatStore();
   
   const conversationMessages = messages[conversationId] || [];

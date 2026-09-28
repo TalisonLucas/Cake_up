@@ -203,32 +203,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'conversation_id': event['conversation_id']
         }))
     
-    async def operator_assigned(self, event):
-        """Notifica que operador foi atribuído à conversa"""
-        await self.send(text_data=json.dumps({
-            'type': 'operator_assigned',
-            'conversation_id': event['conversation_id'],
-            'operator_id': event['operator_id'],
-            'operator_name': event['operator_name']
-        }))
-    
-    async def conversation_status_changed(self, event):
-        """Notifica que status da conversa mudou"""
-        await self.send(text_data=json.dumps({
-            'type': 'conversation_status_changed',
-            'conversation_id': event['conversation_id'],
-            'status': event['status']
-        }))
-    
-    async def admin_called(self, event):
-        """Notifica que administrador foi chamado"""
-        await self.send(text_data=json.dumps({
-            'type': 'admin_called',
-            'conversation_id': event['conversation_id'],
-            'operator_id': event['operator_id'],
-            'operator_name': event['operator_name']
-        }))
-    
     @database_sync_to_async
     def get_user(self, user_id):
         """Busca usuário do banco"""

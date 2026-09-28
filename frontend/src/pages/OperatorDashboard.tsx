@@ -14,7 +14,7 @@ import { HiClock, HiCheckCircle, HiTruck, HiCurrencyDollar, HiCog } from 'react-
 export const OperatorDashboard = () => {
   const { orders, loadOrders } = useOrderStore();
   const { user } = useAuthStore();
-  const { loadConversations } = useChatStore();
+  const { loadConversations, connectWebSocket, disconnectWebSocket, conversations, joinConversation } = useChatStore();
   const [stats, setStats] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'aguardando' | 'aceito' | 'producao' | 'liberado' | 'pago' | 'cancelado'>('all');
   const [loading, setLoading] = useState(true);
@@ -41,38 +41,42 @@ export const OperatorDashboard = () => {
     // Carregar conversas para exibir badges de notificação
     loadConversations();
 
-    // Conectar WebSocket para atualizações em tempo real
-    const connectWebSocket = async () => {
+    // Conectar WebSocket de pedidos para atualizações em tempo real
+    const connectOrderWebSocket = async () => {
       try {
         await useWebSocketStore.getState().connect();
       } catch (error) {
-        console.error('Erro ao conectar WebSocket:', error);
+        console.error('Erro ao conectar WebSocket de pedidos:', error);
       }
     };
 
-    connectWebSocket();
+    connectOrderWebSocket();
 
-    // Atualizar conversas periodicamente para manter badges atualizados (a cada 30 segundos)
-    const conversationInterval = setInterval(() => {
-      loadConversations();
-    }, 30000);
+    // Conectar WebSocket de chat para mensagens em tempo real
+    if (user) {
+      connectWebSocket();
+    }
 
-    // Atualizar conversas quando a janela receber foco (usuário volta para a aba)
-    const handleFocus = () => {
-      loadConversations();
-    };
-    window.addEventListener('focus', handleFocus);
-
-    // Desconectar ao desmontar apenas se realmente conectou
+    // Desconectar ao desmontar
     return () => {
-      clearInterval(conversationInterval);
-      window.removeEventListener('focus', handleFocus);
       const { connected } = useWebSocketStore.getState();
       if (connected) {
         useWebSocketStore.getState().disconnect();
       }
+      disconnectWebSocket();
     };
-  }, [loadConversations]);
+  }, [loadConversations, connectWebSocket, disconnectWebSocket, user]);
+
+  // Entrar nas conversas relacionadas aos pedidos quando conversas carregarem
+  useEffect(() => {
+    if (conversations.length > 0) {
+      conversations.forEach(conv => {
+        if (conv.relatedOrderId) {
+          joinConversation(conv.id);
+        }
+      });
+    }
+  }, [conversations, joinConversation]);
 
   const loadData = async () => {
     try {

@@ -118,7 +118,25 @@ class ConversationViewSet(viewsets.ModelViewSet):
         )
         
         serializer = MessageSerializer(message, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        message_data = serializer.data
+        
+        # Enviar mensagem via WebSocket
+        if channel_layer:
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    f'chat_{conversation.id}',
+                    {
+                        'type': 'new_message',
+                        'message': message_data,
+                        'conversation_id': str(conversation.id)
+                    }
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Erro ao enviar mensagem via WebSocket: {e}', exc_info=True)
+        
+        return Response(message_data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'])
     def mark_all_read(self, request, pk=None):

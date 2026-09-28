@@ -20,5 +20,3 @@ export const Layout = ({ children, title }: LayoutProps) => {
     </div>
   );
 };
-
-

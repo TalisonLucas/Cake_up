@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 from decouple import config
 from datetime import timedelta
 import os
@@ -93,9 +94,25 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+DATABASE_URL = config('DATABASE_URL', default='')
 DB_ENGINE = config('DB_ENGINE', default='sqlite')
 
-if DB_ENGINE == 'postgresql':
+if DATABASE_URL:
+    parsed_db = urlparse(DATABASE_URL)
+    db_query = parse_qs(parsed_db.query)
+    sslmode = (db_query.get('sslmode') or [None])[0]
+    database = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': parsed_db.path.lstrip('/'),
+        'USER': unquote(parsed_db.username or ''),
+        'PASSWORD': unquote(parsed_db.password or ''),
+        'HOST': parsed_db.hostname or '',
+        'PORT': str(parsed_db.port or 5432),
+    }
+    if sslmode:
+        database['OPTIONS'] = {'sslmode': sslmode}
+    DATABASES = {'default': database}
+elif DB_ENGINE == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -179,6 +196,9 @@ else:
         "http://127.0.0.1:5174",
         "https://cake-up.vercel.app"
     ]
+    frontend_url = config('FRONTEND_URL', default='').rstrip('/')
+    if frontend_url and frontend_url not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(frontend_url)
     CORS_ALLOW_CREDENTIALS = True
 
 # Permitir todos os métodos HTTP

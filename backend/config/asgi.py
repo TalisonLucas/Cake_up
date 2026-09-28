@@ -22,7 +22,11 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django_asgi_app = get_asgi_application()
 
 # Import routing after Django is initialized
-from orders.routing import websocket_urlpatterns
+from orders.routing import websocket_urlpatterns as orders_websocket_urlpatterns
+from chat.routing import websocket_urlpatterns as chat_websocket_urlpatterns
+
+# Combinar todos os patterns de WebSocket
+websocket_urlpatterns = orders_websocket_urlpatterns + chat_websocket_urlpatterns
 
 # Em desenvolvimento (DEBUG=True), permitir todas as origens para WebSocket
 # Em produção, usar AllowedHostsOriginValidator para segurança

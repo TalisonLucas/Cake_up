@@ -48,3 +48,7 @@ Invoke-WebRequest -Uri "https://psilotic-sergio-cowardly.ngrok-free.dev/api/heal
 3. O frontend no Vercel já funciona automaticamente
 
 
+
+
+
+
