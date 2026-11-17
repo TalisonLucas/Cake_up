@@ -5,7 +5,6 @@ import { StatusBadge } from '../components/Order/StatusBadge';
 import { OrderTimer } from '../components/Order/OrderTimer';
 import { OrderChatButton } from '../components/Chat/OrderChatButton';
 import { useOrderStore } from '../store/orderStore';
-import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../services/api';
 import type { Order } from '../types';
 import {
@@ -23,7 +22,6 @@ import {
 export const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { orders, canEditOrder, getRemainingEditTime, updateOrder, loadOrders } = useOrderStore();
 
   const [order, setOrder] = useState<Order | null>(null);
