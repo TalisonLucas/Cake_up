@@ -87,6 +87,17 @@ class OrderViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(read_serializer.data)
         return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
+    def update(self, request, *args, **kwargs):
+        """Atualiza pedido usando OrderUpdateSerializer para validação e OrderSerializer para saída."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        read_serializer = OrderSerializer(instance, context=self.get_serializer_context())
+        return Response(read_serializer.data)
+    
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         """Cancelar um pedido

@@ -3,6 +3,7 @@ import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Profile } from './pages/Profile';
 import { Orders } from './pages/Orders';
+import { OrderDetail } from './pages/OrderDetail';
 import { Historia } from './pages/Historia';
 import { QuemSomos } from './pages/QuemSomos';
 import { MontarCupcake } from './pages/MontarCupcake';
@@ -48,6 +49,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Orders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pedido/:id"
+          element={
+            <ProtectedRoute>
+              <OrderDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pedidos/:id"
+          element={
+            <ProtectedRoute>
+              <OrderDetail />
             </ProtectedRoute>
           }
         />

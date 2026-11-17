@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { HiEye, HiEyeOff } from 'react-icons/hi';
 import { Layout } from '../components/Layout/Layout';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
@@ -10,6 +11,8 @@ export const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   // Login form
   const [loginData, setLoginData] = useState({
@@ -155,15 +158,26 @@ export const Login = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Senha:</label>
-              <input
-                type="password"
-                value={loginData.password}
-                onChange={(e) =>
-                  setLoginData({ ...loginData, password: e.target.value })
-                }
-                className="w-full px-4 py-2 bg-cake-cyan rounded-lg border-0 focus:ring-2 focus:ring-cake-pink outline-none"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  value={loginData.password}
+                  onChange={(e) =>
+                    setLoginData({ ...loginData, password: e.target.value })
+                  }
+                  className="w-full pl-4 pr-11 py-2 bg-cake-cyan rounded-lg border-0 focus:ring-2 focus:ring-cake-pink outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-cake-text transition-colors p-1"
+                  title={showLoginPassword ? 'Ocultar senha' : 'Ver senha'}
+                  aria-label={showLoginPassword ? 'Ocultar senha' : 'Ver senha'}
+                >
+                  {showLoginPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
@@ -227,15 +241,26 @@ export const Login = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Senha:</label>
-              <input
-                type="password"
-                value={registerData.password}
-                onChange={(e) =>
-                  setRegisterData({ ...registerData, password: e.target.value })
-                }
-                className="w-full px-4 py-2 bg-cake-cyan rounded-lg border-0 focus:ring-2 focus:ring-cake-pink outline-none"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showRegisterPassword ? 'text' : 'password'}
+                  value={registerData.password}
+                  onChange={(e) =>
+                    setRegisterData({ ...registerData, password: e.target.value })
+                  }
+                  className="w-full pl-4 pr-11 py-2 bg-cake-cyan rounded-lg border-0 focus:ring-2 focus:ring-cake-pink outline-none"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-cake-text transition-colors p-1"
+                  title={showRegisterPassword ? 'Ocultar senha' : 'Ver senha'}
+                  aria-label={showRegisterPassword ? 'Ocultar senha' : 'Ver senha'}
+                >
+                  {showRegisterPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"

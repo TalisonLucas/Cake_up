@@ -165,6 +165,34 @@ export const authApi = {
       createdAt: response.data.created_at,
     } as User;
   },
+
+  updateProfile: async (data: { name?: string; email?: string; phone?: string; cpf?: string }) => {
+    const payload: any = {};
+    if (data.name !== undefined) {
+      const parts = data.name.trim().split(' ');
+      payload.first_name = parts[0] || '';
+      payload.last_name = parts.slice(1).join(' ') || '';
+    }
+    if (data.email !== undefined) payload.email = data.email;
+    if (data.phone !== undefined) payload.phone = data.phone;
+    if (data.cpf !== undefined) payload.cpf = data.cpf;
+
+    const response = await api.patch<any>('/auth/profile/', payload);
+    return {
+      id: response.data.id?.toString() || '',
+      name: `${response.data.first_name || ''} ${response.data.last_name || ''}`.trim() || response.data.username,
+      email: response.data.email,
+      phone: response.data.phone,
+      role: (response.data.role?.toLowerCase() as 'client' | 'operator' | 'admin') || 'client',
+      avatar: response.data.avatar,
+      createdAt: response.data.created_at,
+    } as User;
+  },
+
+  changePassword: async (data: { old_password: string; new_password: string; new_password2: string }) => {
+    const response = await api.put<{ message: string }>('/auth/change-password/', data);
+    return response.data;
+  },
 };
 
 // Products endpoints
@@ -298,7 +326,7 @@ const mapOrderItemToCupcake = (item: any): Cupcake => {
       cobertura,
       quantity: item.quantity || 1,
       preco: precoTotal || parseFloat(item.unit_price || 0) * (item.quantity || 1),
-      observacoes: item.observacoes,
+      observacoes: cupcakeData.observacoes || item.observacoes || '',
     };
   } else if (item.product && item.product_details) {
     // Produto pronto - converter para formato Cupcake básico
@@ -419,6 +447,7 @@ export const mapOrderFromBackend = (backendOrder: any): Order => {
         : undefined),
     createdAt: backendOrder.created_at,
     updatedAt: backendOrder.updated_at,
+    paidAt: backendOrder.paid_at,
     clientId: backendOrder.user?.toString?.() ?? '',
     clientName: backendOrder.user_name || 'Cliente',
     statusHistory: [], // TODO: Mapear histórico quando necessário
@@ -431,6 +460,7 @@ export const mapOrderFromBackend = (backendOrder: any): Order => {
       district: backendOrder.delivery_neighborhood,
       city: backendOrder.delivery_city,
       state: backendOrder.delivery_state,
+      complement: backendOrder.delivery_complement || '',
     },
   };
 };
@@ -462,6 +492,7 @@ export const ordersApi = {
         recheio_details: cupcake.recheio,
         cobertura_id: cupcake.cobertura.id,
         cobertura_details: cupcake.cobertura,
+        observacoes: cupcake.observacoes || '',
       },
       quantity: cupcake.quantity,
       unit_price: cupcake.preco,
@@ -493,6 +524,11 @@ export const ordersApi = {
   cancel: async (orderId: string) => {
     // Endpoint de cancelamento do backend retorna apenas uma mensagem
     await api.post(`/orders/orders/${orderId}/cancel/`);
+  },
+
+  update: async (orderId: string, updates: { observations?: string }) => {
+    const response = await api.patch(`/orders/orders/${orderId}/`, updates);
+    return mapOrderFromBackend(response.data);
   },
 
   validateDeliveryCode: async (orderId: string, code: string) => {
@@ -637,24 +673,52 @@ export const chatApi = {
   },
 };
 
+// Helper para normalizar endereço vindo da API
+const mapAddressFromBackend = (item: any): Address => ({
+  id: item.id?.toString() || '',
+  cep: item.zipcode || item.cep || '',
+  street: item.street || '',
+  number: item.number || '',
+  district: item.neighborhood || item.district || '',
+  city: item.city || '',
+  state: item.state || '',
+  complement: item.complement || '',
+  is_default: item.is_default || false,
+});
+
+// Helper para converter endereço do frontend para o backend
+const mapAddressToBackend = (address: Partial<Address>) => ({
+  street: address.street,
+  number: address.number,
+  complement: address.complement || '',
+  neighborhood: address.district || address.neighborhood,
+  city: address.city,
+  state: address.state,
+  zipcode: address.cep || address.zipcode,
+  is_default: address.is_default ?? false,
+});
+
 // Address endpoints
 export const addressApi = {
-  getAll: async () => {
-    const response = await api.get<{ results: Address[] }>('/auth/addresses/');
-    return response.data.results || response.data; // Compatibilidade com paginação
+  getAll: async (): Promise<Address[]> => {
+    const response = await api.get<any>('/auth/addresses/');
+    const list = Array.isArray(response.data) ? response.data : (response.data.results || []);
+    return list.map(mapAddressFromBackend);
   },
 
-  create: async (address: Omit<Address, 'id'>) => {
-    const response = await api.post<Address>('/auth/addresses/', address);
-    return response.data;
+  create: async (address: Omit<Address, 'id'>): Promise<Address> => {
+    const payload = mapAddressToBackend(address);
+    const response = await api.post<any>('/auth/addresses/', payload);
+    return mapAddressFromBackend(response.data);
   },
 
-  update: async (id: string, address: Partial<Address>) => {
-    const response = await api.put<Address>(`/auth/addresses/${id}/`, address);
-    return response.data;
+  update: async (id: string, address: Partial<Address>): Promise<Address> => {
+    const payload = mapAddressToBackend(address);
+    const response = await api.patch<any>(`/auth/addresses/${id}/`, payload);
+    return mapAddressFromBackend(response.data);
   },
 
-  delete: async (id: string) => {
+  delete: async (id: string): Promise<void> => {
     await api.delete(`/auth/addresses/${id}/`);
   },
 };

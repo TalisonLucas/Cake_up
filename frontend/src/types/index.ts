@@ -24,6 +24,10 @@ export interface Address {
   district: string;
   city: string;
   state: string;
+  complement?: string;
+  zipcode?: string;
+  neighborhood?: string;
+  is_default?: boolean;
 }
 
 // ============ CUPCAKE SYSTEM ============
@@ -101,6 +105,7 @@ export interface Order {
   canEditUntil?: string; // Timestamp: 2 minutos após criação
   createdAt: string;
   updatedAt: string;
+  paidAt?: string;
   clientId: string;
   clientName: string;
   operatorId?: string;
