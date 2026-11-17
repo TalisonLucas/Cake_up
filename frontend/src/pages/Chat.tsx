@@ -13,22 +13,18 @@ type ConversationFilter = 'all' | 'orders' | 'operator-admin';
 export const Chat = () => {
   const location = useLocation();
   const { user } = useAuthStore();
-  const { error: chatError, connectWebSocket, disconnectWebSocket, setActiveConversation, loadConversations } = useChatStore();
+  const { error: chatError, connectWebSocket, setActiveConversation, loadConversations } = useChatStore();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showUserSelector, setShowUserSelector] = useState(false);
   const [filter, setFilter] = useState<ConversationFilter>('all');
 
-  // Conectar WebSocket e carregar conversas quando componente montar
+  // Layout já mantém a sessão de chat; aqui só reforça carga/join
   useEffect(() => {
     if (user) {
       connectWebSocket();
       loadConversations();
     }
-
-    return () => {
-      disconnectWebSocket();
-    };
-  }, [user, connectWebSocket, disconnectWebSocket, loadConversations]);
+  }, [user, connectWebSocket, loadConversations]);
 
   // Abrir conversa se veio do state (ex: ao clicar em OrderChatButton)
   useEffect(() => {

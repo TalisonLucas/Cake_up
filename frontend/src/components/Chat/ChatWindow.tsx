@@ -9,10 +9,19 @@ interface ChatWindowProps {
   onClose: () => void;
 }
 
+const formatRemaining = (ms: number): string => {
+  if (ms <= 0) return '0:00';
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
 export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const [now, setNow] = useState(Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { user } = useAuthStore();
@@ -24,6 +33,8 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
     conversations,
     callAdmin,
     markResolved,
+    closeConversation,
+    loadConversations,
   } = useChatStore();
   
   const conversationMessages = messages[conversationId] || [];
@@ -31,6 +42,17 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
   const isOrderConversation = !!conversation?.relatedOrderId || !!conversation?.orderDetails;
   const isOperator = user?.role === 'operator';
   const isAdmin = user?.role === 'admin';
+  const isClosed = conversation?.status === 'closed';
+
+  const orderStatus = (conversation?.orderDetails?.status || '').toUpperCase();
+  const orderPaid = orderStatus === 'PAGO' || orderStatus === 'PAID';
+  const autoCloseAtMs = conversation?.autoCloseAt
+    ? new Date(conversation.autoCloseAt).getTime()
+    : null;
+  const remainingMs = autoCloseAtMs != null ? autoCloseAtMs - now : null;
+  const canClose =
+    !isClosed &&
+    (!!conversation?.autoCloseAt || orderPaid || conversation?.type === 'operator-admin');
 
   useEffect(() => {
     loadMessages(conversationId);
@@ -43,10 +65,25 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversationMessages]);
 
+  // Countdown + auto-refresh quando o timer vencer
+  useEffect(() => {
+    if (!autoCloseAtMs || isClosed) return;
+
+    const tick = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= autoCloseAtMs) {
+        loadConversations();
+      }
+    }, 1000);
+
+    return () => clearInterval(tick);
+  }, [autoCloseAtMs, isClosed, loadConversations]);
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!message.trim() || !user) return;
+    if (!message.trim() || !user || isClosed) return;
 
     sendMessage(conversationId, message.trim(), user.id, user.name, user.role);
     setMessage('');
@@ -85,6 +122,22 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
     }
   };
 
+  const handleCloseConversation = async () => {
+    if (!conversationId || loadingAction) return;
+    if (!confirm('Deseja encerrar esta conversa? Não será possível enviar novas mensagens.')) {
+      return;
+    }
+    setLoadingAction(true);
+    try {
+      await closeConversation(conversationId);
+    } catch (error: any) {
+      console.error('Erro ao encerrar conversa:', error);
+      alert(error.response?.data?.error || 'Não foi possível encerrar a conversa.');
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-white rounded-2xl border border-gray-200 overflow-hidden">
       {/* Header */}
@@ -103,7 +156,17 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
             )}
             {conversation?.status && (
               <p className="text-xs text-purple-100 mt-1">
-                Status: {conversation.status === 'open' ? 'Aberta' : conversation.status === 'resolved' ? 'Resolvida' : 'Fechada'}
+                Status:{' '}
+                {conversation.status === 'open'
+                  ? 'Aberta'
+                  : conversation.status === 'resolved'
+                    ? 'Resolvida'
+                    : 'Fechada'}
+              </p>
+            )}
+            {!isClosed && remainingMs != null && remainingMs > 0 && (
+              <p className="text-xs text-amber-100 mt-1 font-medium">
+                Encerra automaticamente em {formatRemaining(remainingMs)}
               </p>
             )}
           </div>
@@ -117,8 +180,8 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
         </div>
         
         {/* Action Buttons */}
-        {(isOperator || isAdmin) && (
-          <div className="flex gap-2 mt-2">
+        {!isClosed && (
+          <div className="flex flex-wrap gap-2 mt-2">
             {isOperator && (
               <button
                 onClick={handleCallAdmin}
@@ -135,6 +198,15 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
                 className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
               >
                 {loadingAction ? 'Carregando...' : 'Marcar como Resolvida'}
+              </button>
+            )}
+            {canClose && (
+              <button
+                onClick={handleCloseConversation}
+                disabled={loadingAction}
+                className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loadingAction ? 'Carregando...' : 'Encerrar conversa'}
               </button>
             )}
           </div>
@@ -161,25 +233,31 @@ export const ChatWindow = ({ conversationId, onClose }: ChatWindowProps) => {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="p-4 border-t border-gray-200 bg-white">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={message}
-            onChange={handleTyping}
-            placeholder="Digite sua mensagem..."
-            className="flex-1 px-4 py-2 bg-gray-100 rounded-full border-0 focus:ring-2 focus:ring-purple-500 outline-none"
-          />
-          <button
-            type="submit"
-            disabled={!message.trim()}
-            className="p-3 bg-purple-600 hover:bg-purple-700 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Enviar"
-          >
-            <HiPaperAirplane size={20} className="text-white" />
-          </button>
+      {isClosed ? (
+        <div className="p-4 border-t border-gray-200 bg-gray-100 text-center text-sm text-gray-600">
+          Esta conversa foi encerrada. Não é possível enviar novas mensagens.
         </div>
-      </form>
+      ) : (
+        <form onSubmit={handleSend} className="p-4 border-t border-gray-200 bg-white">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={message}
+              onChange={handleTyping}
+              placeholder="Digite sua mensagem..."
+              className="flex-1 px-4 py-2 bg-gray-100 rounded-full border-0 focus:ring-2 focus:ring-purple-500 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!message.trim()}
+              className="p-3 bg-purple-600 hover:bg-purple-700 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Enviar"
+            >
+              <HiPaperAirplane size={20} className="text-white" />
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
@@ -246,5 +324,3 @@ const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
     </div>
   );
 };
-
-

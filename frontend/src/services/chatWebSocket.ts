@@ -22,10 +22,19 @@ const getWebSocketUrl = (): string => {
 const WS_BASE_URL = getWebSocketUrl();
 
 export interface ChatWebSocketMessage {
-  type: 'new_message' | 'message_read' | 'error' | 'ping' | 'pong' | 'connection_success' | 'joined_conversation';
+  type:
+    | 'new_message'
+    | 'message_read'
+    | 'error'
+    | 'ping'
+    | 'pong'
+    | 'connection_success'
+    | 'joined_conversation'
+    | 'conversation_status_changed';
   message?: any;
   conversation_id?: string;
   message_id?: string;
+  status?: string;
   error?: string;
 }
 

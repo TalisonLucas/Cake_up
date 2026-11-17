@@ -145,6 +145,7 @@ export interface Conversation {
   unreadCount: number;
   createdAt: string;
   updatedAt: string;
+  autoCloseAt?: string | null;
   relatedOrderId?: string | number;
   assignedOperatorId?: string | number;
   orderDetails?: {

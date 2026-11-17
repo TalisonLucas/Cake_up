@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 
 class Conversation(models.Model):
@@ -48,6 +51,12 @@ class Conversation(models.Model):
         default=ConversationStatus.OPEN,
         verbose_name='Status'
     )
+    auto_close_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Encerrar automaticamente em',
+        help_text='Após confirmação de entrega, conversa encerra neste horário'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
     
@@ -75,6 +84,55 @@ class Conversation(models.Model):
     def get_last_message(self):
         """Retorna a última mensagem da conversa"""
         return self.messages.last()
+
+    @property
+    def is_closed(self):
+        return self.status == self.ConversationStatus.CLOSED
+
+    def schedule_auto_close(self, from_time=None, minutes=10):
+        """Agenda encerramento automático (ex.: após entrega confirmada)."""
+        base = from_time or timezone.now()
+        self.auto_close_at = base + timedelta(minutes=minutes)
+        if self.status == self.ConversationStatus.CLOSED:
+            return
+        self.save(update_fields=['auto_close_at', 'updated_at'])
+
+    def close(self, *, force=False):
+        """Encerra a conversa."""
+        if self.status == self.ConversationStatus.CLOSED and not force:
+            return False
+        self.status = self.ConversationStatus.CLOSED
+        self.save(update_fields=['status', 'updated_at'])
+        return True
+
+    def close_if_due(self):
+        """Fecha se auto_close_at já passou. Retorna True se fechou agora."""
+        if self.status == self.ConversationStatus.CLOSED:
+            return False
+        if self.auto_close_at and timezone.now() >= self.auto_close_at:
+            return self.close()
+        return False
+
+    @classmethod
+    def close_all_due(cls):
+        """Fecha em lote conversas com auto_close_at vencido."""
+        now = timezone.now()
+        return cls.objects.filter(
+            auto_close_at__lte=now,
+        ).exclude(
+            status=cls.ConversationStatus.CLOSED,
+        ).update(status=cls.ConversationStatus.CLOSED, updated_at=now)
+
+    @classmethod
+    def schedule_auto_close_for_order(cls, order, minutes=10):
+        """Agenda encerramento nas conversas do pedido após confirmação de entrega."""
+        from_time = getattr(order, 'paid_at', None) or timezone.now()
+        close_at = from_time + timedelta(minutes=minutes)
+        qs = cls.objects.filter(
+            order=order,
+            conversation_type=cls.ConversationType.CLIENT_ESTABLISHMENT,
+        ).exclude(status=cls.ConversationStatus.CLOSED)
+        return qs.update(auto_close_at=close_at, updated_at=timezone.now())
 
 
 class Message(models.Model):

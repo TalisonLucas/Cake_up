@@ -4,12 +4,14 @@ import { Layout } from '../components/Layout/Layout';
 import { ComponentSelector } from '../components/Cupcake/ComponentSelector';
 import { CupcakePreview } from '../components/Cupcake/CupcakePreview';
 import { useCupcakeStore } from '../store/cupcakeStore';
+import { useAuthStore } from '../store/authStore';
 import { cupcakeComponentsApi } from '../services/api';
 import type { CupcakeComponent } from '../types';
 import { HiMinus, HiPlus } from 'react-icons/hi';
 
 export const MontarCupcake = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const {
     selectedMassa,
     selectedRecheio,
@@ -30,8 +32,19 @@ export const MontarCupcake = () => {
   const [coberturas, setCoberturas] = useState<CupcakeComponent[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Staff não monta pedido — redirecionar para o dashboard
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin/dashboard', { replace: true });
+    } else if (user?.role === 'operator') {
+      navigate('/operador/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
   // Carregar componentes da API (apenas disponíveis para clientes)
   useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'operator') return;
+
     const loadComponents = async () => {
       try {
         // getAll() já filtra apenas disponíveis por padrão
@@ -47,7 +60,11 @@ export const MontarCupcake = () => {
       }
     };
     loadComponents();
-  }, []);
+  }, [user?.role]);
+
+  if (user?.role === 'admin' || user?.role === 'operator') {
+    return null;
+  }
 
   const total = selectedMassa && selectedRecheio && selectedCobertura
     ? selectedMassa.price + selectedRecheio.price + selectedCobertura.price

@@ -672,6 +672,11 @@ export const chatApi = {
     return response.data;
   },
 
+  closeConversation: async (conversationId: string) => {
+    const response = await api.post(`/chat/conversations/${conversationId}/close/`);
+    return response.data;
+  },
+
   markAllRead: async (conversationId: string) => {
     const response = await api.post(`/chat/conversations/${conversationId}/mark_all_read/`);
     return response.data;

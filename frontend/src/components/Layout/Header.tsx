@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HiMenu, HiShoppingCart, HiUser } from 'react-icons/hi';
+import { HiMenu, HiShoppingCart, HiUser, HiChat } from 'react-icons/hi';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
+import { useChatStore } from '../../store/chatStore';
 
 interface HeaderProps {
   title: string;
@@ -13,6 +14,12 @@ export const Header = ({ title }: HeaderProps) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
   const { items } = useCartStore();
+  const conversations = useChatStore((s) => s.conversations);
+  // Badge só conta mensagens não lidas de conversas abertas
+  const chatUnread = conversations.reduce((total, conv) => {
+    if (conv.status !== 'open') return total;
+    return total + (conv.unreadCount || 0);
+  }, 0);
 
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -39,6 +46,20 @@ export const Header = ({ title }: HeaderProps) => {
 
         {/* Ícones direita */}
         <div className="flex items-center gap-2">
+          {isAuthenticated && (
+            <Link
+              to="/chat"
+              className="p-2 hover:bg-cake-dark-pink rounded-lg transition-colors relative"
+              aria-label="Notificações de chat"
+            >
+              <HiChat size={24} />
+              {chatUnread > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {chatUnread > 9 ? '9+' : chatUnread}
+                </span>
+              )}
+            </Link>
+          )}
           <Link
             to="/carrinho"
             className="p-2 hover:bg-cake-dark-pink rounded-lg transition-colors relative"

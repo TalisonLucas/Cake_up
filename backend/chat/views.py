@@ -32,6 +32,9 @@ class ConversationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return Conversation.objects.none()
+
+        # Encerrar conversas cujo timer pós-entrega já venceu
+        Conversation.close_all_due()
         
         user = self.request.user
         user_role = getattr(user, 'role', None)
@@ -96,12 +99,20 @@ class ConversationViewSet(viewsets.ModelViewSet):
     def send_message(self, request, pk=None):
         """Enviar uma mensagem na conversa"""
         conversation = self.get_object()
+        conversation.close_if_due()
+        conversation.refresh_from_db()
         
         # Verificar se o usuário é participante
         if request.user not in conversation.participants.all():
             return Response(
                 {"error": "Você não é participante desta conversa."},
                 status=status.HTTP_403_FORBIDDEN
+            )
+
+        if conversation.status == Conversation.ConversationStatus.CLOSED:
+            return Response(
+                {"error": "Esta conversa foi encerrada. Não é possível enviar novas mensagens."},
+                status=status.HTTP_400_BAD_REQUEST
             )
         
         content = request.data.get('content')
@@ -345,9 +356,15 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 {"error": "Apenas operadores e administradores podem marcar conversa como resolvida."},
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        if conversation.status == Conversation.ConversationStatus.CLOSED:
+            return Response(
+                {"error": "Conversa já encerrada."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         conversation.status = Conversation.ConversationStatus.RESOLVED
-        conversation.save()
+        conversation.save(update_fields=['status', 'updated_at'])
         
         # Notificar via WebSocket
         if channel_layer:
@@ -366,6 +383,62 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 logger = logging.getLogger(__name__)
                 logger.error(f'Erro ao notificar mudança de status via WebSocket: {e}', exc_info=True)
         
+        serializer = ConversationSerializer(conversation, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def close(self, request, pk=None):
+        """Encerrar conversa (cliente, operador ou admin)."""
+        conversation = self.get_object()
+        user = request.user
+        user_role = getattr(user, 'role', None)
+
+        is_participant = conversation.participants.filter(pk=user.pk).exists()
+        is_staff_role = user_role in ['OPERATOR', 'ADMIN'] or user.is_staff
+
+        if not is_participant and not is_staff_role:
+            return Response(
+                {"error": "Você não tem permissão para encerrar esta conversa."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        conversation.close_if_due()
+        conversation.refresh_from_db()
+
+        if conversation.status == Conversation.ConversationStatus.CLOSED:
+            serializer = ConversationSerializer(conversation, context={'request': request})
+            return Response(serializer.data)
+
+        # Pedido associado: permitir encerrar após entrega confirmada (pago)
+        # ou se o timer já foi agendado / conversa OPERATOR_ADMIN
+        if conversation.order_id:
+            order_status = conversation.order.status
+            from orders.models import OrderStatus
+            if order_status != OrderStatus.PAGO and not conversation.auto_close_at:
+                return Response(
+                    {
+                        "error": "O encerramento do chat do pedido fica disponível após a confirmação de entrega."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        conversation.close()
+
+        if channel_layer:
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    f'chat_{conversation.id}',
+                    {
+                        'type': 'conversation_status_changed',
+                        'conversation_id': str(conversation.id),
+                        'status': conversation.status
+                    }
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Erro ao notificar encerramento via WebSocket: {e}', exc_info=True)
+
         serializer = ConversationSerializer(conversation, context={'request': request})
         return Response(serializer.data)
 

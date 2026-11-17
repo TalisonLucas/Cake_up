@@ -5,8 +5,9 @@ import { StatusBadge } from '../components/Order/StatusBadge';
 import { OrderTimer } from '../components/Order/OrderTimer';
 import { OrderChatButton } from '../components/Chat/OrderChatButton';
 import { useOrderStore } from '../store/orderStore';
+import { useAuthStore } from '../store/authStore';
 import { ordersApi } from '../services/api';
-import type { Order } from '../types';
+import type { Order, OrderStatus } from '../types';
 import {
   HiArrowLeft,
   HiLocationMarker,
@@ -19,10 +20,41 @@ import {
   HiExclamationCircle,
 } from 'react-icons/hi';
 
+const statusFlow: Record<OrderStatus, OrderStatus | null> = {
+  aguardando: 'aceito',
+  aceito: 'producao',
+  producao: 'liberado',
+  liberado: 'pago',
+  pago: null,
+  cancelado: null,
+};
+
+const getStatusLabel = (status: OrderStatus): string => {
+  const labels: Record<OrderStatus, string> = {
+    aguardando: 'Aguardando',
+    aceito: 'Aceito',
+    producao: 'Em Produção',
+    liberado: 'Liberado',
+    pago: 'Pago',
+    cancelado: 'Cancelado',
+  };
+  return labels[status];
+};
+
 export const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const { orders, canEditOrder, getRemainingEditTime, updateOrder, loadOrders } = useOrderStore();
+
+  const isStaff = user?.role === 'operator' || user?.role === 'admin';
+  const isAdmin = user?.role === 'admin';
+  const backPath = isAdmin
+    ? '/admin/dashboard'
+    : user?.role === 'operator'
+      ? '/operador/dashboard'
+      : '/meus-pedidos';
+  const backLabel = isStaff ? 'Voltar ao Dashboard' : 'Voltar para Meus Pedidos';
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +65,9 @@ export const OrderDetail = () => {
   const [newObservations, setNewObservations] = useState('');
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [code, setCode] = useState('');
+  const [showCodeInput, setShowCodeInput] = useState(false);
 
   // Buscar pedido
   useEffect(() => {
@@ -120,11 +155,11 @@ export const OrderDetail = () => {
             </p>
             <div className="pt-4">
               <Link
-                to="/meus-pedidos"
+                to={backPath}
                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-cake-pink hover:bg-cake-dark-pink text-cake-text font-semibold rounded-xl transition-colors shadow-sm text-sm"
               >
                 <HiArrowLeft size={16} />
-                Voltar para Meus Pedidos
+                {backLabel}
               </Link>
             </div>
           </div>
@@ -165,7 +200,7 @@ export const OrderDetail = () => {
       await ordersApi.cancel(order.id);
       await loadOrders();
       alert('Pedido cancelado com sucesso.');
-      navigate('/meus-pedidos');
+      navigate(backPath);
     } catch (err: any) {
       console.error('Erro ao cancelar pedido:', err);
       alert(err.response?.data?.error || err.response?.data?.detail || 'Erro ao cancelar pedido.');
@@ -174,17 +209,56 @@ export const OrderDetail = () => {
     }
   };
 
+  const nextStatus = order ? statusFlow[order.status] : null;
+
+  const handleAdvanceStatus = async () => {
+    if (!order || !nextStatus) return;
+    setStatusUpdating(true);
+    try {
+      const updated = await ordersApi.updateStatus(order.id, nextStatus);
+      setOrder(updated);
+      updateOrder(order.id, updated);
+    } catch (err: any) {
+      console.error('Erro ao avançar status:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Erro ao atualizar status.');
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
+  const handleValidateCode = async () => {
+    if (!order || code.length !== 6) return;
+    setStatusUpdating(true);
+    try {
+      const updated = await ordersApi.validateDeliveryCode(order.id, code);
+      setOrder(updated);
+      updateOrder(order.id, updated);
+      setCode('');
+      setShowCodeInput(false);
+      alert('Código validado. Entrega confirmada.');
+    } catch (err: any) {
+      console.error('Erro ao validar código:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Código inválido.');
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
+  const canStaffCancel =
+    isStaff &&
+    (order.status === 'aguardando' || (order.status === 'aceito' && isAdmin));
+
   return (
     <Layout title={`Pedido ${order.number}`}>
       <div className="max-w-3xl mx-auto py-6 px-4 space-y-6">
         {/* Top Navigation */}
         <div className="flex items-center justify-between">
           <Link
-            to="/meus-pedidos"
+            to={backPath}
             className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-cake-text transition-colors"
           >
             <HiArrowLeft size={18} />
-            Voltar para Meus Pedidos
+            {backLabel}
           </Link>
 
           <OrderChatButton
@@ -193,6 +267,70 @@ export const OrderDetail = () => {
             className="text-xs px-3 py-1.5"
           />
         </div>
+
+        {isStaff && (
+          <div className="bg-white rounded-2xl shadow-md p-4 border border-gray-200 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              Ações do {isAdmin ? 'administrador' : 'operador'}
+            </p>
+            {order.clientName && (
+              <p className="text-sm text-gray-700">
+                <strong>Cliente:</strong> {order.clientName}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {nextStatus && order.status !== 'pago' && order.status !== 'cancelado' && (
+                <button
+                  type="button"
+                  onClick={handleAdvanceStatus}
+                  disabled={statusUpdating}
+                  className="px-4 py-2 bg-cake-pink hover:bg-cake-dark-pink text-cake-text font-semibold text-sm rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {statusUpdating ? 'Atualizando...' : `Avançar para: ${getStatusLabel(nextStatus)}`}
+                </button>
+              )}
+              {order.status === 'liberado' && (
+                <button
+                  type="button"
+                  onClick={() => setShowCodeInput((v) => !v)}
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold text-sm rounded-lg transition-colors"
+                >
+                  Validar código
+                </button>
+              )}
+              {canStaffCancel && (
+                <button
+                  type="button"
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm rounded-lg border border-red-300 transition-colors disabled:opacity-50"
+                >
+                  {cancelling ? 'Cancelando...' : 'Cancelar pedido'}
+                </button>
+              )}
+            </div>
+            {showCodeInput && order.status === 'liberado' && (
+              <div className="flex gap-2 pt-1">
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-center text-lg font-mono"
+                  maxLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={handleValidateCode}
+                  disabled={code.length !== 6 || statusUpdating}
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Validar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Order Main Card */}
         <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 space-y-5">
@@ -224,8 +362,8 @@ export const OrderDetail = () => {
             <StatusBadge status={order.status} />
           </div>
 
-          {/* Timer de tolerância de alteração */}
-          {canEdit && remainingTime > 0 && !isCanceled && (
+          {/* Timer de tolerância de alteração (cliente) */}
+          {!isStaff && canEdit && remainingTime > 0 && !isCanceled && (
             <div className="space-y-2">
               <OrderTimer order={order} />
               <div className="flex items-center justify-between text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
@@ -349,7 +487,7 @@ export const OrderDetail = () => {
                 <HiInformationCircle size={18} className="text-cake-pink" />
                 Observações do Pedido
               </h3>
-              {canEdit && remainingTime > 0 && !editingObservations && !isCanceled && (
+              {!isStaff && canEdit && remainingTime > 0 && !editingObservations && !isCanceled && (
                 <button
                   type="button"
                   onClick={() => setEditingObservations(true)}
@@ -491,9 +629,9 @@ export const OrderDetail = () => {
           </div>
 
           {/* ======================================================== */}
-          {/* AÇÕES (CANCELAMENTO)                                     */}
+          {/* AÇÕES (CANCELAMENTO — cliente na janela de tolerância)   */}
           {/* ======================================================== */}
-          {canEdit && remainingTime > 0 && !isCanceled && (
+          {!isStaff && canEdit && remainingTime > 0 && !isCanceled && (
             <div className="pt-4 border-t border-gray-100 flex justify-end">
               <button
                 type="button"

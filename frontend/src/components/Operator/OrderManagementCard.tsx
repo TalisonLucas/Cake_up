@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { type Order, type OrderStatus } from '../../types';
 import { StatusBadge } from '../Order/StatusBadge';
 import { OrderChatButton } from '../Chat/OrderChatButton';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '../../store/chatStore';
-import { HiChat } from 'react-icons/hi';
+import { HiChat, HiEye } from 'react-icons/hi';
 
 interface OrderManagementCardProps {
   order: Order;
@@ -96,6 +97,14 @@ export const OrderManagementCard = ({ order, onStatusChange, onValidateCode, onC
 
           {/* Coluna 4: Ações */}
           <div className="flex flex-col desktop:flex-row gap-2 desktop:min-w-[200px]">
+            <Link
+              to={`/pedido/${order.id}`}
+              className="px-3 py-2 bg-white hover:bg-gray-50 text-cake-text font-semibold text-sm rounded-lg border border-gray-300 transition-colors whitespace-nowrap inline-flex items-center justify-center gap-1"
+              title="Ver detalhes do pedido"
+            >
+              <HiEye size={16} />
+              Detalhes
+            </Link>
             <OrderChatButton
               orderId={order.id}
               existingConversation={orderConversation}
@@ -189,7 +198,14 @@ export const OrderManagementCard = ({ order, onStatusChange, onValidateCode, onC
 
       {/* Ações do operador */}
       <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Link
+            to={`/pedido/${order.id}`}
+            className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-cake-text font-semibold text-sm rounded-lg border border-gray-300 transition-colors"
+          >
+            <HiEye size={16} />
+            Ver detalhes
+          </Link>
           <OrderChatButton
             orderId={order.id}
             existingConversation={orderConversation}

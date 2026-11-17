@@ -52,6 +52,20 @@ def create_delivery_code_on_status_change(sender, instance, created, **kwargs):
             # Log do erro mas não quebra o fluxo
             logger.error(f'Erro ao enviar notificação WebSocket: {e}', exc_info=True)
 
+    # Após confirmação de entrega (pago): agendar encerramento do chat em 10 min
+    if (
+        not created
+        and instance.status == OrderStatus.PAGO
+        and old_status is not None
+        and old_status != OrderStatus.PAGO
+    ):
+        try:
+            from chat.models import Conversation
+            Conversation.schedule_auto_close_for_order(instance, minutes=10)
+            logger.info(f'Auto-close de chat agendado para pedido {instance.id}')
+        except Exception as e:
+            logger.error(f'Erro ao agendar auto-close do chat do pedido {instance.id}: {e}', exc_info=True)
+
 
 def send_order_status_notification(order, is_new=False):
     """Envia notificação WebSocket sobre mudança de status do pedido"""

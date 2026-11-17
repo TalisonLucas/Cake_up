@@ -39,42 +39,33 @@ export const Home = () => {
 
   // Filtrar menuItems e adicionar card Dashboard para operadores e admins
   const menuItems = useMemo(() => {
-    let items = [...allMenuItems];
-    
-    // Remover "Meus Pedidos" para operadores e admins
+    // Staff: apenas Dashboard + História + Quem somos
     if (user?.role === 'operator' || user?.role === 'admin') {
-      items = items.filter(item => item.path !== '/meus-pedidos');
-      
-      // Criar card Dashboard baseado no role
-      const dashboardCard = user?.role === 'admin' 
-        ? {
-            title: 'Dashboard Admin',
-            path: '/admin/dashboard',
-            color: 'bg-cake-cyan',
-            icon: '👑',
-            description: 'Painel de controle administrativo',
-          }
-        : {
-            title: 'Dashboard Operador',
-            path: '/operador/dashboard',
-            color: 'bg-cake-cyan',
-            icon: '🎯',
-            description: 'Gerenciar pedidos e operações',
-          };
-      
-      // Reorganizar: Dashboard primeiro, depois História, Quem somos, e Monte seu Cupcake por último
-      // Após filtrar, items tem: Monte seu Cupcake, História, Quem somos
-      // Queremos: Dashboard, História, Quem somos, Monte seu Cupcake
-      const monteCupcake = items.find(item => item.path === '/montar');
-      const outros = items.filter(item => item.path !== '/montar');
-      
-      items = [dashboardCard, ...outros];
-      if (monteCupcake) {
-        items.push(monteCupcake);
-      }
+      const dashboardCard =
+        user.role === 'admin'
+          ? {
+              title: 'Dashboard Admin',
+              path: '/admin/dashboard',
+              color: 'bg-cake-cyan',
+              icon: '👑',
+              description: 'Painel de controle administrativo',
+            }
+          : {
+              title: 'Dashboard Operador',
+              path: '/operador/dashboard',
+              color: 'bg-cake-cyan',
+              icon: '🎯',
+              description: 'Gerenciar pedidos e operações',
+            };
+
+      const institutional = allMenuItems.filter(
+        (item) => item.path === '/historia' || item.path === '/quem-somos'
+      );
+
+      return [dashboardCard, ...institutional];
     }
-    
-    return items;
+
+    return [...allMenuItems];
   }, [user]);
 
   return (

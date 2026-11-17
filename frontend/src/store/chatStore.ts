@@ -44,9 +44,18 @@ const mapConversation = (rawConv: any): Conversation => {
       unreadCount: rawConv.unread_count || 0,
       createdAt: rawConv.created_at || new Date().toISOString(),
       updatedAt: rawConv.updated_at || new Date().toISOString(),
+      autoCloseAt: rawConv.auto_close_at || null,
       relatedOrderId: rawConv.order?.toString() || rawConv.order_details?.id?.toString(),
       assignedOperatorId: rawConv.assigned_operator?.toString() || rawConv.assigned_operator_details?.id?.toString(),
-      orderDetails: rawConv.order_details,
+      orderDetails: rawConv.order_details
+        ? {
+            id: rawConv.order_details.id,
+            status: rawConv.order_details.status,
+            statusDisplay: rawConv.order_details.status_display || rawConv.order_details.statusDisplay || '',
+            total: rawConv.order_details.total,
+            userName: rawConv.order_details.user_name || rawConv.order_details.userName || '',
+          }
+        : undefined,
       assignedOperatorDetails: rawConv.assigned_operator_details,
     };
   } catch (error) {
@@ -72,14 +81,19 @@ interface ChatState {
   setTyping: (userId: string, isTyping: boolean) => void;
   createConversation: (conversation: Conversation) => void;
   getUnreadCount: (userId: string) => number;
+  getTotalUnreadCount: () => number;
   createConversationFromOrder: (orderId: string | number) => Promise<Conversation>;
   assignOperator: (conversationId: string, operatorId: string | number) => Promise<void>;
   callAdmin: (conversationId: string) => Promise<Conversation>;
   markResolved: (conversationId: string) => Promise<void>;
+  closeConversation: (conversationId: string) => Promise<void>;
   connectWebSocket: () => Promise<void>;
   disconnectWebSocket: () => void;
   joinConversation: (conversationId: string) => void;
+  ensureChatSession: () => Promise<void>;
 }
+
+let chatWsListenersBound = false;
 
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
@@ -227,7 +241,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
   
-  // Mark messages as read
+  // Mark messages as read (local + API)
   markAsRead: (conversationId, userId) => {
     set((state) => ({
       messages: {
@@ -240,6 +254,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
       ),
     }));
+
+    chatApi.markAllRead(conversationId).catch((error) => {
+      console.warn('Falha ao marcar mensagens como lidas na API:', error);
+    });
   },
   
   // Set typing indicator
@@ -259,13 +277,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
   },
   
-  // Get total unread count for user
+  // Get total unread count for user (only open conversations)
   getUnreadCount: (userId) => {
     const { conversations, messages } = get();
     return conversations.reduce((total, conv) => {
+      if (conv.status !== 'open') return total;
       const convMessages = messages[conv.id] || [];
-      const unread = convMessages.filter(msg => msg.senderId !== userId && !msg.read).length;
-      return total + unread;
+      if (convMessages.length > 0) {
+        const unread = convMessages.filter(msg => msg.senderId !== userId && !msg.read).length;
+        return total + unread;
+      }
+      return total + (conv.unreadCount || 0);
+    }, 0);
+  },
+
+  // Aggregate unread from open conversations only
+  getTotalUnreadCount: () => {
+    const { conversations } = get();
+    return conversations.reduce((total, conv) => {
+      if (conv.status !== 'open') return total;
+      return total + (conv.unreadCount || 0);
     }, 0);
   },
 
@@ -330,6 +361,70 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const token = useAuthStore.getState().token;
     if (!token) return;
     await chatWebSocketService.connect(token);
+
+    if (chatWsListenersBound) return;
+    chatWsListenersBound = true;
+
+    // Atualizar unread / mensagens quando chegar evento global
+    chatWebSocketService.on('new_message', (payload) => {
+      const currentUserId = useAuthStore.getState().user?.id?.toString();
+      const conversationId = payload.conversation_id?.toString()
+        || payload.message?.conversation?.toString()
+        || payload.message?.conversation_id?.toString();
+      if (!conversationId) {
+        get().loadConversations();
+        return;
+      }
+
+      const rawMsg = payload.message;
+      const senderId = rawMsg?.sender?.toString() || rawMsg?.sender_id?.toString() || '';
+      const isOwn = currentUserId && senderId === currentUserId;
+      const activeId = get().activeConversationId;
+
+      if (rawMsg) {
+        const mapped: ChatMessage = {
+          id: rawMsg.id?.toString() || `ws-${Date.now()}`,
+          conversationId,
+          senderId,
+          senderName: rawMsg.sender_name || rawMsg.sender_username || 'Usuário',
+          senderRole: (rawMsg.sender_role || 'client').toLowerCase() as ChatMessage['senderRole'],
+          message: rawMsg.content || rawMsg.message || '',
+          timestamp: rawMsg.timestamp || new Date().toISOString(),
+          read: !!rawMsg.is_read,
+        };
+
+        set((state) => {
+          const existing = state.messages[conversationId] || [];
+          const already = existing.some((m) => m.id === mapped.id);
+          return {
+            messages: {
+              ...state.messages,
+              [conversationId]: already ? existing : [...existing, mapped],
+            },
+            conversations: state.conversations.map((conv) => {
+              if (conv.id !== conversationId) return conv;
+              // Não incrementar badge em conversas já resolvidas/encerradas
+              const bumpUnread =
+                !isOwn &&
+                activeId !== conversationId &&
+                conv.status === 'open';
+              return {
+                ...conv,
+                lastMessage: mapped,
+                updatedAt: mapped.timestamp,
+                unreadCount: bumpUnread ? (conv.unreadCount || 0) + 1 : conv.unreadCount,
+              };
+            }),
+          };
+        });
+      } else {
+        get().loadConversations();
+      }
+    });
+
+    chatWebSocketService.on('conversation_status_changed', () => {
+      get().loadConversations();
+    });
   },
 
   disconnectWebSocket: () => {
@@ -340,11 +435,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
     chatWebSocketService.joinConversation(conversationId);
   },
 
+  ensureChatSession: async () => {
+    const { token, isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated || !token) return;
+    try {
+      await get().connectWebSocket();
+    } catch (error) {
+      console.warn('Chat WebSocket não conectou; badge usará polling da API:', error);
+    }
+    await get().loadConversations();
+  },
+
   // Mark conversation as resolved
   markResolved: async (conversationId) => {
     try {
       const rawConversation = await chatApi.markResolved(conversationId);
-      const updatedConversation = mapConversation(rawConversation);
+      const updatedConversation = {
+        ...mapConversation(rawConversation),
+        unreadCount: 0,
+      };
       set((state) => ({
         conversations: state.conversations.map(conv =>
           conv.id === conversationId ? updatedConversation : conv
@@ -352,6 +461,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }));
     } catch (error: any) {
       console.error('Erro ao marcar conversa como resolvida:', error);
+      throw error;
+    }
+  },
+
+  closeConversation: async (conversationId) => {
+    try {
+      const rawConversation = await chatApi.closeConversation(conversationId);
+      const updatedConversation = {
+        ...mapConversation(rawConversation),
+        unreadCount: 0,
+      };
+      set((state) => ({
+        conversations: state.conversations.map(conv =>
+          conv.id === conversationId ? updatedConversation : conv
+        ),
+      }));
+    } catch (error: any) {
+      console.error('Erro ao encerrar conversa:', error);
       throw error;
     }
   },

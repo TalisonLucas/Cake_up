@@ -34,9 +34,9 @@ class ConversationSerializer(serializers.ModelSerializer):
             'id', 'participants', 'participants_details', 'conversation_type',
             'conversation_type_display', 'last_message', 'unread_count',
             'order', 'order_details', 'assigned_operator', 'assigned_operator_details',
-            'status', 'status_display', 'created_at', 'updated_at'
+            'status', 'status_display', 'auto_close_at', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'auto_close_at', 'created_at', 'updated_at']
     
     def get_participants_details(self, obj: Conversation) -> List[Dict[str, Any]]:
         return [
@@ -50,6 +50,12 @@ class ConversationSerializer(serializers.ModelSerializer):
         ]
     
     def get_unread_count(self, obj: Conversation) -> int:
+        # Conversas resolvidas/encerradas não entram no badge de notificação
+        if obj.status in (
+            Conversation.ConversationStatus.RESOLVED,
+            Conversation.ConversationStatus.CLOSED,
+        ):
+            return 0
         request = self.context.get('request')
         if request and request.user:
             return obj.messages.filter(is_read=False).exclude(sender=request.user).count()
