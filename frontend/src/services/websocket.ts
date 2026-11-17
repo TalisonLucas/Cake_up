@@ -21,7 +21,12 @@ const getWebSocketUrl = (): string => {
     return `${isSecure ? 'wss://' : 'ws://'}${envUrl}`;
   }
   
-  // Fallback: usar localhost com protocolo baseado na origem
+  // Fallback inteligente: em produção, conectar ao Railway com WSS
+  if (import.meta.env.PROD) {
+    return 'wss://cakeup-production.up.railway.app';
+  }
+  
+  // Fallback local: usar localhost com protocolo baseado na origem
   const isSecure = window.location.protocol === 'https:';
   return `${isSecure ? 'wss://' : 'ws://'}localhost:8000`;
 };

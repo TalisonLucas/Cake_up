@@ -196,10 +196,21 @@ else:
         "http://127.0.0.1:5174",
         "https://cake-up.vercel.app"
     ]
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://.*\.vercel\.app$",
+    ]
     frontend_url = config('FRONTEND_URL', default='').rstrip('/')
     if frontend_url and frontend_url not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(frontend_url)
     CORS_ALLOW_CREDENTIALS = True
+
+# Confiança para CSRF em produção
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.vercel.app",
+    "https://*.railway.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
 
 # Permitir todos os métodos HTTP
 CORS_ALLOW_METHODS = [
